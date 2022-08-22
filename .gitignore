@@ -20,3 +20,5 @@ test-output/
 .settings
 eclipse-classes
 snappy-cc
+.gradle/
+build/
