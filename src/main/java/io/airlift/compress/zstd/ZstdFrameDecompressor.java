@@ -48,7 +48,6 @@ import static io.airlift.compress.zstd.Constants.SIZE_OF_INT;
 import static io.airlift.compress.zstd.Constants.SIZE_OF_LONG;
 import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
 import static io.airlift.compress.zstd.Constants.TREELESS_LITERALS_BLOCK;
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 import static io.airlift.compress.zstd.Util.fail;
 import static io.airlift.compress.zstd.Util.mask;
 import static io.airlift.compress.zstd.Util.verify;
@@ -113,7 +112,7 @@ class ZstdFrameDecompressor
     private final byte[] literals = new byte[MAX_BLOCK_SIZE + SIZE_OF_LONG]; // extra space to allow for long-at-a-time copy
 
     // current buffer containing literals
-    private Object literalsBase;
+    private ArrayUtil literalsBase;
     private long literalsAddress;
     private long literalsLimit;
 
@@ -131,10 +130,10 @@ class ZstdFrameDecompressor
     private final FseTableReader fse = new FseTableReader();
 
     public int decompress(
-            final Object inputBase,
+            final ArrayUtil inputBase,
             final long inputAddress,
             final long inputLimit,
-            final Object outputBase,
+            final ArrayUtil outputBase,
             final long outputAddress,
             final long outputLimit)
     {
@@ -158,7 +157,7 @@ class ZstdFrameDecompressor
                 verify(input + SIZE_OF_BLOCK_HEADER <= inputLimit, input, "Not enough input bytes");
 
                 // read block header
-                int header = UNSAFE.getInt(inputBase, input) & 0xFF_FFFF;
+                int header = inputBase.getInt(input) & 0xFF_FFFF;
                 input += SIZE_OF_BLOCK_HEADER;
 
                 lastBlock = (header & 1) != 0;
@@ -195,7 +194,7 @@ class ZstdFrameDecompressor
 
                 long hash = XxHash64.hash(0, outputBase, outputStart, decodedFrameSize);
 
-                int checksum = UNSAFE.getInt(inputBase, input);
+                int checksum = inputBase.getInt(input);
                 if (checksum != (int) hash) {
                     throw new MalformedInputException(input, String.format("Bad checksum. Expected: %s, actual: %s", Integer.toHexString(checksum), Integer.toHexString((int) hash)));
                 }
@@ -226,12 +225,12 @@ class ZstdFrameDecompressor
         return blockSize;
     }
 
-    private static int decodeRleBlock(int size, Object inputBase, long inputAddress, Object outputBase, long outputAddress, long outputLimit)
+    private static int decodeRleBlock(int size, ArrayUtil inputBase, long inputAddress, ArrayUtil outputBase, long outputAddress, long outputLimit)
     {
         verify(outputAddress + size <= outputLimit, inputAddress, "Output buffer too small");
 
         long output = outputAddress;
-        long value = UNSAFE.getByte(inputBase, inputAddress) & 0xFFL;
+        long value = outputBase.getByte(inputAddress) & 0xFFL;
 
         int remaining = size;
         if (remaining >= SIZE_OF_LONG) {
@@ -245,7 +244,7 @@ class ZstdFrameDecompressor
                     | (value << 56);
 
             do {
-                UNSAFE.putLong(outputBase, output, packed);
+                outputBase.putLong(output, packed);
                 output += SIZE_OF_LONG;
                 remaining -= SIZE_OF_LONG;
             }
@@ -253,14 +252,14 @@ class ZstdFrameDecompressor
         }
 
         for (int i = 0; i < remaining; i++) {
-            UNSAFE.putByte(outputBase, output, (byte) value);
+            outputBase.putByte(output, (byte) value);
             output++;
         }
 
         return size;
     }
 
-    private int decodeCompressedBlock(Object inputBase, final long inputAddress, int blockSize, Object outputBase, long outputAddress, long outputLimit, int windowSize, long outputAbsoluteBaseAddress)
+    private int decodeCompressedBlock(ArrayUtil inputBase, final long inputAddress, int blockSize, ArrayUtil outputBase, long outputAddress, long outputLimit, int windowSize, long outputAbsoluteBaseAddress)
     {
         long inputLimit = inputAddress + blockSize;
         long input = inputAddress;
@@ -269,7 +268,7 @@ class ZstdFrameDecompressor
         verify(blockSize >= MIN_BLOCK_SIZE, input, "Compressed block size too small");
 
         // decode literals
-        int literalsBlockType = UNSAFE.getByte(inputBase, input) & 0b11;
+        int literalsBlockType = outputBase.getByte(input) & 0b11;
 
         switch (literalsBlockType) {
             case RAW_LITERALS_BLOCK: {
@@ -300,9 +299,9 @@ class ZstdFrameDecompressor
     }
 
     private int decompressSequences(
-            final Object inputBase, final long inputAddress, final long inputLimit,
-            final Object outputBase, final long outputAddress, final long outputLimit,
-            final Object literalsBase, final long literalsAddress, final long literalsLimit,
+            final ArrayUtil inputBase, final long inputAddress, final long inputLimit,
+            final ArrayUtil outputBase, final long outputAddress, final long outputLimit,
+            final ArrayUtil literalsBase, final long literalsAddress, final long literalsLimit,
             long outputAbsoluteBaseAddress)
     {
         final long fastOutputLimit = outputLimit - SIZE_OF_LONG;
@@ -317,21 +316,21 @@ class ZstdFrameDecompressor
         verify(size >= MIN_SEQUENCES_SIZE, input, "Not enough input bytes");
 
         // decode header
-        int sequenceCount = UNSAFE.getByte(inputBase, input++) & 0xFF;
+        int sequenceCount = outputBase.getByte(input++) & 0xFF;
         if (sequenceCount != 0) {
             if (sequenceCount == 255) {
                 verify(input + SIZE_OF_SHORT <= inputLimit, input, "Not enough input bytes");
-                sequenceCount = (UNSAFE.getShort(inputBase, input) & 0xFFFF) + LONG_NUMBER_OF_SEQUENCES;
+                sequenceCount = (inputBase.getShort(input) & 0xFFFF) + LONG_NUMBER_OF_SEQUENCES;
                 input += SIZE_OF_SHORT;
             }
             else if (sequenceCount > 127) {
                 verify(input < inputLimit, input, "Not enough input bytes");
-                sequenceCount = ((sequenceCount - 128) << 8) + (UNSAFE.getByte(inputBase, input++) & 0xFF);
+                sequenceCount = ((sequenceCount - 128) << 8) + (outputBase.getByte(input++) & 0xFF);
             }
 
             verify(input + SIZE_OF_INT <= inputLimit, input, "Not enough input bytes");
 
-            byte type = UNSAFE.getByte(inputBase, input++);
+            byte type = outputBase.getByte(input++);
 
             int literalsLengthType = (type & 0xFF) >>> 6;
             int offsetCodesType = (type >>> 4) & 0b11;
@@ -513,7 +512,7 @@ class ZstdFrameDecompressor
         return output;
     }
 
-    private void copyMatch(Object outputBase, long fastOutputLimit, long output, int offset, long matchOutputLimit, long matchAddress, int matchLength, long fastMatchOutputLimit)
+    private void copyMatch(ArrayUtil outputBase, long fastOutputLimit, long output, int offset, long matchOutputLimit, long matchAddress, int matchLength, long fastMatchOutputLimit)
     {
         matchAddress = copyMatchHead(outputBase, output, offset, matchAddress);
         output += SIZE_OF_LONG;
@@ -522,7 +521,7 @@ class ZstdFrameDecompressor
         copyMatchTail(outputBase, fastOutputLimit, output, matchOutputLimit, matchAddress, matchLength, fastMatchOutputLimit);
     }
 
-    private void copyMatchTail(Object outputBase, long fastOutputLimit, long output, long matchOutputLimit, long matchAddress, int matchLength, long fastMatchOutputLimit)
+    private void copyMatchTail(ArrayUtil outputBase, long fastOutputLimit, long output, long matchOutputLimit, long matchAddress, int matchLength, long fastMatchOutputLimit)
     {
         // fastMatchOutputLimit is just fastOutputLimit - SIZE_OF_LONG. It needs to be passed in so that it can be computed once for the
         // whole invocation to decompressSequences. Otherwise, we'd just compute it here.
@@ -531,7 +530,7 @@ class ZstdFrameDecompressor
         if (matchOutputLimit < fastMatchOutputLimit) {
             int copied = 0;
             do {
-                UNSAFE.putLong(outputBase, output, UNSAFE.getLong(outputBase, matchAddress));
+                outputBase.putLong(output, outputBase.getLong(matchAddress));
                 output += SIZE_OF_LONG;
                 matchAddress += SIZE_OF_LONG;
                 copied += SIZE_OF_LONG;
@@ -540,18 +539,18 @@ class ZstdFrameDecompressor
         }
         else {
             while (output < fastOutputLimit) {
-                UNSAFE.putLong(outputBase, output, UNSAFE.getLong(outputBase, matchAddress));
+                outputBase.putLong(output, outputBase.getLong(matchAddress));
                 matchAddress += SIZE_OF_LONG;
                 output += SIZE_OF_LONG;
             }
 
             while (output < matchOutputLimit) {
-                UNSAFE.putByte(outputBase, output++, UNSAFE.getByte(outputBase, matchAddress++));
+                outputBase.putByte(output++, outputBase.getByte(matchAddress++));
             }
         }
     }
 
-    private long copyMatchHead(Object outputBase, long output, int offset, long matchAddress)
+    private long copyMatchHead(ArrayUtil outputBase, long output, int offset, long matchAddress)
     {
         // copy match
         if (offset < 8) {
@@ -559,27 +558,27 @@ class ZstdFrameDecompressor
             int increment32 = DEC_32_TABLE[offset];
             int decrement64 = DEC_64_TABLE[offset];
 
-            UNSAFE.putByte(outputBase, output, UNSAFE.getByte(outputBase, matchAddress));
-            UNSAFE.putByte(outputBase, output + 1, UNSAFE.getByte(outputBase, matchAddress + 1));
-            UNSAFE.putByte(outputBase, output + 2, UNSAFE.getByte(outputBase, matchAddress + 2));
-            UNSAFE.putByte(outputBase, output + 3, UNSAFE.getByte(outputBase, matchAddress + 3));
+            outputBase.putByte(output, outputBase.getByte(matchAddress));
+            outputBase.putByte(output + 1, outputBase.getByte(matchAddress + 1));
+            outputBase.putByte(output + 2, outputBase.getByte(matchAddress + 2));
+            outputBase.putByte(output + 3, outputBase.getByte(matchAddress + 3));
             matchAddress += increment32;
 
-            UNSAFE.putInt(outputBase, output + 4, UNSAFE.getInt(outputBase, matchAddress));
+            outputBase.putInt(output + 4, outputBase.getInt(matchAddress));
             matchAddress -= decrement64;
         }
         else {
-            UNSAFE.putLong(outputBase, output, UNSAFE.getLong(outputBase, matchAddress));
+            outputBase.putLong(output, outputBase.getLong(matchAddress));
             matchAddress += SIZE_OF_LONG;
         }
         return matchAddress;
     }
 
-    private long copyLiterals(Object outputBase, Object literalsBase, long output, long literalsInput, long literalOutputLimit)
+    private long copyLiterals(ArrayUtil outputBase, ArrayUtil literalsBase, long output, long literalsInput, long literalOutputLimit)
     {
         long literalInput = literalsInput;
         do {
-            UNSAFE.putLong(outputBase, output, UNSAFE.getLong(literalsBase, literalInput));
+            outputBase.putLong(output, literalsBase.getLong(literalInput));
             output += SIZE_OF_LONG;
             literalInput += SIZE_OF_LONG;
         }
@@ -588,13 +587,13 @@ class ZstdFrameDecompressor
         return output;
     }
 
-    private long computeMatchLengthTable(int matchLengthType, Object inputBase, long input, long inputLimit)
+    private long computeMatchLengthTable(int matchLengthType, ArrayUtil inputBase, long input, long inputLimit)
     {
         switch (matchLengthType) {
             case SEQUENCE_ENCODING_RLE:
                 verify(input < inputLimit, input, "Not enough input bytes");
 
-                byte value = UNSAFE.getByte(inputBase, input++);
+                byte value = inputBase.getByte(input++);
                 verify(value <= MAX_MATCH_LENGTH_SYMBOL, input, "Value exceeds expected maximum value");
 
                 FseTableReader.initializeRleTable(matchLengthTable, value);
@@ -616,13 +615,13 @@ class ZstdFrameDecompressor
         return input;
     }
 
-    private long computeOffsetsTable(int offsetCodesType, Object inputBase, long input, long inputLimit)
+    private long computeOffsetsTable(int offsetCodesType, ArrayUtil inputBase, long input, long inputLimit)
     {
         switch (offsetCodesType) {
             case SEQUENCE_ENCODING_RLE:
                 verify(input < inputLimit, input, "Not enough input bytes");
 
-                byte value = UNSAFE.getByte(inputBase, input++);
+                byte value = inputBase.getByte(input++);
                 verify(value <= DEFAULT_MAX_OFFSET_CODE_SYMBOL, input, "Value exceeds expected maximum value");
 
                 FseTableReader.initializeRleTable(offsetCodesTable, value);
@@ -644,13 +643,13 @@ class ZstdFrameDecompressor
         return input;
     }
 
-    private long computeLiteralsTable(int literalsLengthType, Object inputBase, long input, long inputLimit)
+    private long computeLiteralsTable(int literalsLengthType, ArrayUtil inputBase, long input, long inputLimit)
     {
         switch (literalsLengthType) {
             case SEQUENCE_ENCODING_RLE:
                 verify(input < inputLimit, input, "Not enough input bytes");
 
-                byte value = UNSAFE.getByte(inputBase, input++);
+                byte value = inputBase.getByte(input++);
                 verify(value <= MAX_LITERALS_LENGTH_SYMBOL, input, "Value exceeds expected maximum value");
 
                 FseTableReader.initializeRleTable(literalsLengthTable, value);
@@ -672,13 +671,13 @@ class ZstdFrameDecompressor
         return input;
     }
 
-    private void executeLastSequence(Object outputBase, long output, long literalOutputLimit, long matchOutputLimit, long fastOutputLimit, long literalInput, long matchAddress)
+    private void executeLastSequence(ArrayUtil outputBase, long output, long literalOutputLimit, long matchOutputLimit, long fastOutputLimit, long literalInput, long matchAddress)
     {
         // copy literals
         if (output < fastOutputLimit) {
             // wild copy
             do {
-                UNSAFE.putLong(outputBase, output, UNSAFE.getLong(literalsBase, literalInput));
+                outputBase.putLong(output, literalsBase.getLong(literalInput));
                 output += SIZE_OF_LONG;
                 literalInput += SIZE_OF_LONG;
             }
@@ -689,20 +688,20 @@ class ZstdFrameDecompressor
         }
 
         while (output < literalOutputLimit) {
-            UNSAFE.putByte(outputBase, output, UNSAFE.getByte(literalsBase, literalInput));
+            outputBase.putByte(output, literalsBase.getByte(literalInput));
             output++;
             literalInput++;
         }
 
         // copy match
         while (output < matchOutputLimit) {
-            UNSAFE.putByte(outputBase, output, UNSAFE.getByte(outputBase, matchAddress));
+            outputBase.putByte(output, outputBase.getByte(matchAddress));
             output++;
             matchAddress++;
         }
     }
 
-    private int decodeCompressedLiterals(Object inputBase, final long inputAddress, int blockSize, int literalsBlockType)
+    private int decodeCompressedLiterals(ArrayUtil inputBase, final long inputAddress, int blockSize, int literalsBlockType)
     {
         long input = inputAddress;
         verify(blockSize >= 5, input, "Not enough input bytes");
@@ -712,12 +711,12 @@ class ZstdFrameDecompressor
         int uncompressedSize;
         boolean singleStream = false;
         int headerSize;
-        int type = (UNSAFE.getByte(inputBase, input) >> 2) & 0b11;
+        int type = (inputBase.getByte(input) >> 2) & 0b11;
         switch (type) {
             case 0:
                 singleStream = true;
             case 1: {
-                int header = UNSAFE.getInt(inputBase, input);
+                int header = inputBase.getInt(input);
 
                 headerSize = 3;
                 uncompressedSize = (header >>> 4) & mask(10);
@@ -725,7 +724,7 @@ class ZstdFrameDecompressor
                 break;
             }
             case 2: {
-                int header = UNSAFE.getInt(inputBase, input);
+                int header = inputBase.getInt(input);
 
                 headerSize = 4;
                 uncompressedSize = (header >>> 4) & mask(14);
@@ -734,8 +733,8 @@ class ZstdFrameDecompressor
             }
             case 3: {
                 // read 5 little-endian bytes
-                long header = UNSAFE.getByte(inputBase, input) & 0xFF |
-                        (UNSAFE.getInt(inputBase, input + 1) & 0xFFFF_FFFFL) << 8;
+                long header = inputBase.getByte(input) & 0xFF |
+                        (inputBase.getInt(input + 1) & 0xFFFF_FFFFL) << 8;
 
                 headerSize = 5;
                 uncompressedSize = (int) ((header >>> 4) & mask(18));
@@ -756,40 +755,40 @@ class ZstdFrameDecompressor
             input += huffman.readTable(inputBase, input, compressedSize);
         }
 
-        literalsBase = literals;
+        literalsBase = ArrayUtil.of(literals);
         literalsAddress = ARRAY_BYTE_BASE_OFFSET;
         literalsLimit = ARRAY_BYTE_BASE_OFFSET + uncompressedSize;
 
         if (singleStream) {
-            huffman.decodeSingleStream(inputBase, input, inputLimit, literals, literalsAddress, literalsLimit);
+            huffman.decodeSingleStream(inputBase, input, inputLimit, literalsBase, literalsAddress, literalsLimit);
         }
         else {
-            huffman.decode4Streams(inputBase, input, inputLimit, literals, literalsAddress, literalsLimit);
+            huffman.decode4Streams(inputBase, input, inputLimit, literalsBase, literalsAddress, literalsLimit);
         }
 
         return headerSize + compressedSize;
     }
 
-    private int decodeRleLiterals(Object inputBase, final long inputAddress, int blockSize)
+    private int decodeRleLiterals(ArrayUtil inputBase, final long inputAddress, int blockSize)
     {
         long input = inputAddress;
         int outputSize;
 
-        int type = (UNSAFE.getByte(inputBase, input) >> 2) & 0b11;
+        int type = (inputBase.getByte(input) >> 2) & 0b11;
         switch (type) {
             case 0:
             case 2:
-                outputSize = (UNSAFE.getByte(inputBase, input) & 0xFF) >>> 3;
+                outputSize = (inputBase.getByte(input) & 0xFF) >>> 3;
                 input++;
                 break;
             case 1:
-                outputSize = (UNSAFE.getShort(inputBase, input) & 0xFFFF) >>> 4;
+                outputSize = (inputBase.getShort(input) & 0xFFFF) >>> 4;
                 input += 2;
                 break;
             case 3:
                 // we need at least 4 bytes (3 for the header, 1 for the payload)
                 verify(blockSize >= SIZE_OF_INT, input, "Not enough input bytes");
-                outputSize = (UNSAFE.getInt(inputBase, input) & 0xFF_FFFF) >>> 4;
+                outputSize = (inputBase.getInt(input) & 0xFF_FFFF) >>> 4;
                 input += 3;
                 break;
             default:
@@ -798,7 +797,7 @@ class ZstdFrameDecompressor
 
         verify(outputSize <= MAX_BLOCK_SIZE, input, "Output exceeds maximum block size");
 
-        byte value = UNSAFE.getByte(inputBase, input++);
+        byte value = inputBase.getByte(input++);
         Arrays.fill(literals, 0, outputSize + SIZE_OF_LONG, value);
 
         literalsBase = literals;
@@ -808,26 +807,26 @@ class ZstdFrameDecompressor
         return (int) (input - inputAddress);
     }
 
-    private int decodeRawLiterals(Object inputBase, final long inputAddress, long inputLimit)
+    private int decodeRawLiterals(ArrayUtil inputBase, final long inputAddress, long inputLimit)
     {
         long input = inputAddress;
-        int type = (UNSAFE.getByte(inputBase, input) >> 2) & 0b11;
+        int type = (inputBase.getByte(input) >> 2) & 0b11;
 
         int literalSize;
         switch (type) {
             case 0:
             case 2:
-                literalSize = (UNSAFE.getByte(inputBase, input) & 0xFF) >>> 3;
+                literalSize = (inputBase.getByte(input) & 0xFF) >>> 3;
                 input++;
                 break;
             case 1:
-                literalSize = (UNSAFE.getShort(inputBase, input) & 0xFFFF) >>> 4;
+                literalSize = (inputBase.getShort(input) & 0xFFFF) >>> 4;
                 input += 2;
                 break;
             case 3:
                 // read 3 little-endian bytes
-                int header = ((UNSAFE.getByte(inputBase, input) & 0xFF) |
-                        ((UNSAFE.getShort(inputBase, input + 1) & 0xFFFF) << 8));
+                int header = ((inputBase.getByte(input) & 0xFF) |
+                        ((inputBase.getShort(input + 1) & 0xFFFF) << 8));
 
                 literalSize = header >>> 4;
                 input += 3;
@@ -841,11 +840,12 @@ class ZstdFrameDecompressor
         // Set literals pointer to [input, literalSize], but only if we can copy 8 bytes at a time during sequence decoding
         // Otherwise, copy literals into buffer that's big enough to guarantee that
         if (literalSize > (inputLimit - input) - SIZE_OF_LONG) {
-            literalsBase = literals;
+            literalsBase = ArrayUtil.of(literals);
             literalsAddress = ARRAY_BYTE_BASE_OFFSET;
             literalsLimit = ARRAY_BYTE_BASE_OFFSET + literalSize;
 
-            UNSAFE.copyMemory(inputBase, input, literals, literalsAddress, literalSize);
+            //UNSAFE.copyMemory(inputBase, input, literals, literalsAddress, literalSize);
+            inputBase.copyMemory(input, literals, literalsAddress, literalSize);
             Arrays.fill(literals, literalSize, literalSize + SIZE_OF_LONG, (byte) 0);
         }
         else {
@@ -858,12 +858,12 @@ class ZstdFrameDecompressor
         return (int) (input - inputAddress);
     }
 
-    static FrameHeader readFrameHeader(final Object inputBase, final long inputAddress, final long inputLimit)
+    static FrameHeader readFrameHeader(final ArrayUtil inputBase, final long inputAddress, final long inputLimit)
     {
         long input = inputAddress;
         verify(input < inputLimit, input, "Not enough input bytes");
 
-        int frameHeaderDescriptor = UNSAFE.getByte(inputBase, input++) & 0xFF;
+        int frameHeaderDescriptor = inputBase.getByte(input++) & 0xFF;
         boolean singleSegment = (frameHeaderDescriptor & 0b100000) != 0;
         int dictionaryDescriptor = frameHeaderDescriptor & 0b11;
         int contentSizeDescriptor = frameHeaderDescriptor >>> 6;
@@ -878,7 +878,7 @@ class ZstdFrameDecompressor
         // decode window size
         int windowSize = -1;
         if (!singleSegment) {
-            int windowDescriptor = UNSAFE.getByte(inputBase, input++) & 0xFF;
+            int windowDescriptor = inputBase.getByte(input++) & 0xFF;
             int exponent = windowDescriptor >>> 3;
             int mantissa = windowDescriptor & 0b111;
 
@@ -890,15 +890,15 @@ class ZstdFrameDecompressor
         long dictionaryId = -1;
         switch (dictionaryDescriptor) {
             case 1:
-                dictionaryId = UNSAFE.getByte(inputBase, input) & 0xFF;
+                dictionaryId = inputBase.getByte(input) & 0xFF;
                 input += SIZE_OF_BYTE;
                 break;
             case 2:
-                dictionaryId = UNSAFE.getShort(inputBase, input) & 0xFFFF;
+                dictionaryId = inputBase.getShort(input) & 0xFFFF;
                 input += SIZE_OF_SHORT;
                 break;
             case 3:
-                dictionaryId = UNSAFE.getInt(inputBase, input) & 0xFFFF_FFFFL;
+                dictionaryId = inputBase.getInt(input) & 0xFFFF_FFFFL;
                 input += SIZE_OF_INT;
                 break;
         }
@@ -909,21 +909,21 @@ class ZstdFrameDecompressor
         switch (contentSizeDescriptor) {
             case 0:
                 if (singleSegment) {
-                    contentSize = UNSAFE.getByte(inputBase, input) & 0xFF;
+                    contentSize = inputBase.getByte(input) & 0xFF;
                     input += SIZE_OF_BYTE;
                 }
                 break;
             case 1:
-                contentSize = UNSAFE.getShort(inputBase, input) & 0xFFFF;
+                contentSize = inputBase.getShort(input) & 0xFFFF;
                 contentSize += 256;
                 input += SIZE_OF_SHORT;
                 break;
             case 2:
-                contentSize = UNSAFE.getInt(inputBase, input) & 0xFFFF_FFFFL;
+                contentSize = inputBase.getInt(input) & 0xFFFF_FFFFL;
                 input += SIZE_OF_INT;
                 break;
             case 3:
-                contentSize = UNSAFE.getLong(inputBase, input);
+                contentSize = inputBase.getLong(input);
                 input += SIZE_OF_LONG;
                 break;
         }
@@ -938,18 +938,18 @@ class ZstdFrameDecompressor
                 hasChecksum);
     }
 
-    public static long getDecompressedSize(final Object inputBase, final long inputAddress, final long inputLimit)
+    public static long getDecompressedSize(final ArrayUtil inputBase, final long inputAddress, final long inputLimit)
     {
         long input = inputAddress;
         input += verifyMagic(inputBase, input, inputLimit);
         return readFrameHeader(inputBase, input, inputLimit).contentSize;
     }
 
-    static int verifyMagic(Object inputBase, long inputAddress, long inputLimit)
+    static int verifyMagic(ArrayUtil inputBase, long inputAddress, long inputLimit)
     {
         verify(inputLimit - inputAddress >= 4, inputAddress, "Not enough input bytes");
 
-        int magic = UNSAFE.getInt(inputBase, inputAddress);
+        int magic = inputBase.getInt(inputAddress);
         if (magic != MAGIC_NUMBER) {
             if (magic == V07_MAGIC_NUMBER) {
                 throw new MalformedInputException(inputAddress, "Data encoded in unsupported ZSTD v0.7 format");

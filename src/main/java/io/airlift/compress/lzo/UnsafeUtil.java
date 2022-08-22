@@ -59,6 +59,6 @@ final class UnsafeUtil
             throw new IllegalArgumentException("buffer is not direct");
         }
 
-        return UNSAFE.getLong(buffer, ADDRESS_OFFSET);
+        return buffer.getLong(ADDRESS_OFFSET);
     }
 }

@@ -71,7 +71,7 @@ class DoubleFastBlockCompressor
             int shortHash = hash(inputBase, input, shortHashBits, matchSearchLength);
             long shortMatchAddress = baseAddress + shortHashTable[shortHash];
 
-            int longHash = hash8(UNSAFE.getLong(inputBase, input), longHashBits);
+            int longHash = hash8(inputBase.getLong(input), longHashBits);
             long longMatchAddress = baseAddress + longHashTable[longHash];
 
             // update hash tables
@@ -82,7 +82,7 @@ class DoubleFastBlockCompressor
             int matchLength;
             int offset;
 
-            if (offset1 > 0 && UNSAFE.getInt(inputBase, input + 1 - offset1) == UNSAFE.getInt(inputBase, input + 1)) {
+            if (offset1 > 0 && inputBase.getInt(input + 1 - offset1) == inputBase.getInt(input + 1)) {
                 // found a repeated sequence of at least 4 bytes, separated by offset1
                 matchLength = count(inputBase, input + 1 + SIZE_OF_INT, inputEnd, input + 1 + SIZE_OF_INT - offset1) + SIZE_OF_INT;
                 input++;
@@ -90,10 +90,10 @@ class DoubleFastBlockCompressor
             }
             else {
                 // check prefix long match
-                if (longMatchAddress > windowBaseAddress && UNSAFE.getLong(inputBase, longMatchAddress) == UNSAFE.getLong(inputBase, input)) {
+                if (longMatchAddress > windowBaseAddress && inputBase.getLong(longMatchAddress) == inputBase.getLong(input)) {
                     matchLength = count(inputBase, input + SIZE_OF_LONG, inputEnd, longMatchAddress + SIZE_OF_LONG) + SIZE_OF_LONG;
                     offset = (int) (input - longMatchAddress);
-                    while (input > anchor && longMatchAddress > windowBaseAddress && UNSAFE.getByte(inputBase, input - 1) == UNSAFE.getByte(inputBase, longMatchAddress - 1)) {
+                    while (input > anchor && longMatchAddress > windowBaseAddress && inputBase.getByte(input - 1) == inputBase.getByte(longMatchAddress - 1)) {
                         input--;
                         longMatchAddress--;
                         matchLength++;
@@ -101,17 +101,17 @@ class DoubleFastBlockCompressor
                 }
                 else {
                     // check prefix short match
-                    if (shortMatchAddress > windowBaseAddress && UNSAFE.getInt(inputBase, shortMatchAddress) == UNSAFE.getInt(inputBase, input)) {
-                        int nextOffsetHash = hash8(UNSAFE.getLong(inputBase, input + 1), longHashBits);
+                    if (shortMatchAddress > windowBaseAddress && inputBase.getInt(shortMatchAddress) == inputBase.getInt(input)) {
+                        int nextOffsetHash = hash8(inputBase.getLong(input + 1), longHashBits);
                         long nextOffsetMatchAddress = baseAddress + longHashTable[nextOffsetHash];
                         longHashTable[nextOffsetHash] = current + 1;
 
                         // check prefix long +1 match
-                        if (nextOffsetMatchAddress > windowBaseAddress && UNSAFE.getLong(inputBase, nextOffsetMatchAddress) == UNSAFE.getLong(inputBase, input + 1)) {
+                        if (nextOffsetMatchAddress > windowBaseAddress && inputBase.getLong(nextOffsetMatchAddress) == inputBase.getLong(input + 1)) {
                             matchLength = count(inputBase, input + 1 + SIZE_OF_LONG, inputEnd, nextOffsetMatchAddress + SIZE_OF_LONG) + SIZE_OF_LONG;
                             input++;
                             offset = (int) (input - nextOffsetMatchAddress);
-                            while (input > anchor && nextOffsetMatchAddress > windowBaseAddress && UNSAFE.getByte(inputBase, input - 1) == UNSAFE.getByte(inputBase, nextOffsetMatchAddress - 1)) {
+                            while (input > anchor && nextOffsetMatchAddress > windowBaseAddress && inputBase.getByte(input - 1) == inputBase.getByte(nextOffsetMatchAddress - 1)) {
                                 input--;
                                 nextOffsetMatchAddress--;
                                 matchLength++;
@@ -121,7 +121,7 @@ class DoubleFastBlockCompressor
                             // if no long +1 match, explore the short match we found
                             matchLength = count(inputBase, input + SIZE_OF_INT, inputEnd, shortMatchAddress + SIZE_OF_INT) + SIZE_OF_INT;
                             offset = (int) (input - shortMatchAddress);
-                            while (input > anchor && shortMatchAddress > windowBaseAddress && UNSAFE.getByte(inputBase, input - 1) == UNSAFE.getByte(inputBase, shortMatchAddress - 1)) {
+                            while (input > anchor && shortMatchAddress > windowBaseAddress && inputBase.getByte(input - 1) == inputBase.getByte(shortMatchAddress - 1)) {
                                 input--;
                                 shortMatchAddress--;
                                 matchLength++;
@@ -145,13 +145,13 @@ class DoubleFastBlockCompressor
 
             if (input <= inputLimit) {
                 // Fill Table
-                longHashTable[hash8(UNSAFE.getLong(inputBase, baseAddress + current + 2), longHashBits)] = current + 2;
+                longHashTable[hash8(inputBase.getLong(baseAddress + current + 2), longHashBits)] = current + 2;
                 shortHashTable[hash(inputBase, baseAddress + current + 2, shortHashBits, matchSearchLength)] = current + 2;
 
-                longHashTable[hash8(UNSAFE.getLong(inputBase, input - 2), longHashBits)] = (int) (input - 2 - baseAddress);
+                longHashTable[hash8(inputBase.getLong(input - 2), longHashBits)] = (int) (input - 2 - baseAddress);
                 shortHashTable[hash(inputBase, input - 2, shortHashBits, matchSearchLength)] = (int) (input - 2 - baseAddress);
 
-                while (input <= inputLimit && offset2 > 0 && UNSAFE.getInt(inputBase, input) == UNSAFE.getInt(inputBase, input - offset2)) {
+                while (input <= inputLimit && offset2 > 0 && inputBase.getInt(input) == inputBase.getInt(input - offset2)) {
                     int repetitionLength = count(inputBase, input + SIZE_OF_INT, inputEnd, input + SIZE_OF_INT - offset2) + SIZE_OF_INT;
 
                     // swap offset2 <=> offset1
@@ -160,7 +160,7 @@ class DoubleFastBlockCompressor
                     offset1 = temp;
 
                     shortHashTable[hash(inputBase, input, shortHashBits, matchSearchLength)] = (int) (input - baseAddress);
-                    longHashTable[hash8(UNSAFE.getLong(inputBase, input), longHashBits)] = (int) (input - baseAddress);
+                    longHashTable[hash8(inputBase.getLong(input), longHashBits)] = (int) (input - baseAddress);
 
                     output.storeSequence(inputBase, anchor, 0, 0, repetitionLength - MIN_MATCH);
 
@@ -193,7 +193,7 @@ class DoubleFastBlockCompressor
         // first, compare long at a time
         int count = 0;
         while (count < remaining - (SIZE_OF_LONG - 1)) {
-            long diff = UNSAFE.getLong(inputBase, match) ^ UNSAFE.getLong(inputBase, input);
+            long diff = inputBase.getLong(match) ^ inputBase.getLong(input);
             if (diff != 0) {
                 return count + (Long.numberOfTrailingZeros(diff) >> 3);
             }
@@ -203,7 +203,7 @@ class DoubleFastBlockCompressor
             match += SIZE_OF_LONG;
         }
 
-        while (count < remaining && UNSAFE.getByte(inputBase, match) == UNSAFE.getByte(inputBase, input)) {
+        while (count < remaining && inputBase.getByte(match) == inputBase.getByte(input)) {
             count++;
             input++;
             match++;
@@ -216,15 +216,15 @@ class DoubleFastBlockCompressor
     {
         switch (matchSearchLength) {
             case 8:
-                return hash8(UNSAFE.getLong(inputBase, inputAddress), bits);
+                return hash8(inputBase.getLong(inputAddress), bits);
             case 7:
-                return hash7(UNSAFE.getLong(inputBase, inputAddress), bits);
+                return hash7(inputBase.getLong(inputAddress), bits);
             case 6:
-                return hash6(UNSAFE.getLong(inputBase, inputAddress), bits);
+                return hash6(inputBase.getLong(inputAddress), bits);
             case 5:
-                return hash5(UNSAFE.getLong(inputBase, inputAddress), bits);
+                return hash5(inputBase.getLong(inputAddress), bits);
             default:
-                return hash4(UNSAFE.getInt(inputBase, inputAddress), bits);
+                return hash4(inputBase.getInt(inputAddress), bits);
         }
     }
 

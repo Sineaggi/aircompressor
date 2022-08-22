@@ -109,10 +109,10 @@ public final class LzoRawCompressor
 
         // First Byte
         // put position in hash
-        table[hash(UNSAFE.getLong(inputBase, input), mask)] = (int) (input - inputAddress);
+        table[hash(inputBase.getLong(input), mask)] = (int) (input - inputAddress);
 
         input++;
-        int nextHash = hash(UNSAFE.getLong(inputBase, input), mask);
+        int nextHash = hash(inputBase.getLong(input), mask);
 
         boolean done = false;
         boolean firstLiteral = true;
@@ -137,15 +137,15 @@ public final class LzoRawCompressor
 
                 // get position on hash
                 matchIndex = inputAddress + table[hash];
-                nextHash = hash(UNSAFE.getLong(inputBase, nextInputIndex), mask);
+                nextHash = hash(inputBase.getLong(nextInputIndex), mask);
 
                 // put position on hash
                 table[hash] = (int) (input - inputAddress);
             }
-            while (UNSAFE.getInt(inputBase, matchIndex) != UNSAFE.getInt(inputBase, input) || matchIndex + MAX_DISTANCE < input);
+            while (inputBase.getInt(matchIndex) != inputBase.getInt(input) || matchIndex + MAX_DISTANCE < input);
 
             // catch up
-            while ((input > anchor) && (matchIndex > inputAddress) && (UNSAFE.getByte(inputBase, input - 1) == UNSAFE.getByte(inputBase, matchIndex - 1))) {
+            while ((input > anchor) && (matchIndex > inputAddress) && (inputBase.getByte(input - 1) == inputBase.getByte(matchIndex - 1))) {
                 --input;
                 --matchIndex;
             }
@@ -175,16 +175,16 @@ public final class LzoRawCompressor
                 }
 
                 long position = input - 2;
-                table[hash(UNSAFE.getLong(inputBase, position), mask)] = (int) (position - inputAddress);
+                table[hash(inputBase.getLong(position), mask)] = (int) (position - inputAddress);
 
                 // Test next position
-                int hash = hash(UNSAFE.getLong(inputBase, input), mask);
+                int hash = hash(inputBase.getLong(input), mask);
                 matchIndex = inputAddress + table[hash];
                 table[hash] = (int) (input - inputAddress);
 
-                if (matchIndex + MAX_DISTANCE < input || UNSAFE.getInt(inputBase, matchIndex) != UNSAFE.getInt(inputBase, input)) {
+                if (matchIndex + MAX_DISTANCE < input || inputBase.getInt(matchIndex) != inputBase.getInt(input)) {
                     input++;
-                    nextHash = hash(UNSAFE.getLong(inputBase, input), mask);
+                    nextHash = hash(inputBase.getLong(input), mask);
                     break;
                 }
 
@@ -205,7 +205,7 @@ public final class LzoRawCompressor
 
         // first, compare long at a time
         while (current < matchLimit - (SIZE_OF_LONG - 1)) {
-            long diff = UNSAFE.getLong(inputBase, matchStart) ^ UNSAFE.getLong(inputBase, current);
+            long diff = inputBase.getLong(matchStart) ^ inputBase.getLong(current);
             if (diff != 0) {
                 current += Long.numberOfTrailingZeros(diff) >> 3;
                 return (int) (current - start);
@@ -215,17 +215,17 @@ public final class LzoRawCompressor
             matchStart += SIZE_OF_LONG;
         }
 
-        if (current < matchLimit - (SIZE_OF_INT - 1) && UNSAFE.getInt(inputBase, matchStart) == UNSAFE.getInt(inputBase, current)) {
+        if (current < matchLimit - (SIZE_OF_INT - 1) && inputBase.getInt(matchStart) == inputBase.getInt(current)) {
             current += SIZE_OF_INT;
             matchStart += SIZE_OF_INT;
         }
 
-        if (current < matchLimit - (SIZE_OF_SHORT - 1) && UNSAFE.getShort(inputBase, matchStart) == UNSAFE.getShort(inputBase, current)) {
+        if (current < matchLimit - (SIZE_OF_SHORT - 1) && inputBase.getShort(matchStart) == inputBase.getShort(current)) {
             current += SIZE_OF_SHORT;
             matchStart += SIZE_OF_SHORT;
         }
 
-        if (current < matchLimit && UNSAFE.getByte(inputBase, matchStart) == UNSAFE.getByte(inputBase, current)) {
+        if (current < matchLimit && inputBase.getByte(matchStart) == inputBase.getByte(current)) {
             ++current;
         }
 
@@ -265,7 +265,7 @@ public final class LzoRawCompressor
 
         final long outputLimit = output + literalLength;
         do {
-            UNSAFE.putLong(outputBase, output, UNSAFE.getLong(inputBase, input));
+            UNSAFE.putLong(outputBase, output, inputBase.getLong(input));
             input += SIZE_OF_LONG;
             output += SIZE_OF_LONG;
         }
@@ -286,7 +286,7 @@ public final class LzoRawCompressor
         else if (length < 4) {
             // Small literals are encoded in the low two bits trailer of the previous command.  The
             // trailer is a little endian short, so we need to adjust the byte 2 back in the output.
-            UNSAFE.putByte(outBase, output - 2, (byte) (UNSAFE.getByte(outBase, output - 2) | length));
+            UNSAFE.putByte(outBase, output - 2, (byte) (outBase.getByte(output - 2) | length));
         }
         else {
             length -= 3;

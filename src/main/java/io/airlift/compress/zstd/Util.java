@@ -76,8 +76,8 @@ final class Util
 
     public static void put24BitLittleEndian(Object outputBase, long outputAddress, int value)
     {
-        UNSAFE.putShort(outputBase, outputAddress, (short) value);
-        UNSAFE.putByte(outputBase, outputAddress + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
+        outputBase.putShort(outputAddress, (short) value);
+        outputBase.putByte(outputAddress + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
     }
 
     // provides the minimum logSize to safely represent a distribution

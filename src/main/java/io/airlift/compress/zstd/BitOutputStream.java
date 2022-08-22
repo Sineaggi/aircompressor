@@ -65,7 +65,7 @@ class BitOutputStream
     {
         int bytes = bitCount >>> 3;
 
-        UNSAFE.putLong(outputBase, currentAddress, container);
+        outputBase.putLong(currentAddress, container);
         currentAddress += bytes;
 
         if (currentAddress > outputLimit) {

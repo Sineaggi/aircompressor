@@ -16,6 +16,7 @@ package io.airlift.compress.zstd;
 import io.airlift.compress.Decompressor;
 import io.airlift.compress.MalformedInputException;
 
+import java.lang.foreign.MemorySegment;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
@@ -33,6 +34,7 @@ public class ZstdDecompressor
     public int decompress(byte[] input, int inputOffset, int inputLength, byte[] output, int outputOffset, int maxOutputLength)
             throws MalformedInputException
     {
+        // todo: so even the base case is fucked by ARRAY_BYTE_BASE_OFFSET garbage. need to internalize this.
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
@@ -41,7 +43,7 @@ public class ZstdDecompressor
         long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
         long outputLimit = outputAddress + maxOutputLength;
 
-        return decompressor.decompress(input, inputAddress, inputLimit, output, outputAddress, outputLimit);
+        return decompressor.decompress(ArrayUtil.of(input), inputAddress, inputLimit, ArrayUtil.of(output), outputAddress, outputLimit);
     }
 
     @Override
@@ -55,17 +57,17 @@ public class ZstdDecompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        Object inputBase;
+        ArrayUtil inputBase;
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = null;
+            inputBase = ArrayUtil.of(input);
             long address = getAddress(input);
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = input.array();
+            inputBase = ArrayUtil.of((byte[])input.array());
             inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
@@ -73,17 +75,15 @@ public class ZstdDecompressor
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        Object outputBase;
+        ArrayUtil outputBase = ArrayUtil.of(output);
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            outputBase = null;
             long address = getAddress(output);
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputBase = output.array();
             outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }
@@ -106,7 +106,7 @@ public class ZstdDecompressor
     public static long getDecompressedSize(byte[] input, int offset, int length)
     {
         int baseAddress = ARRAY_BYTE_BASE_OFFSET + offset;
-        return ZstdFrameDecompressor.getDecompressedSize(input, baseAddress, baseAddress + length);
+        return ZstdFrameDecompressor.getDecompressedSize(ArrayUtil.of(input), baseAddress, baseAddress + length);
     }
 
     private static void verifyRange(byte[] data, int offset, int length)

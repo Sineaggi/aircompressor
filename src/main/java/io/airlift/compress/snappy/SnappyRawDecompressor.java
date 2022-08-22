@@ -81,13 +81,13 @@ public final class SnappyRawDecompressor
         long input = inputAddress;
 
         while (input < inputLimit) {
-            int opCode = UNSAFE.getByte(inputBase, input++) & 0xFF;
+            int opCode = inputBase.getByte(input++) & 0xFF;
             int entry = opLookupTable[opCode] & 0xFFFF;
 
             int trailerBytes = entry >>> 11;
             int trailer = 0;
             if (input + SIZE_OF_INT < inputLimit) {
-                trailer = UNSAFE.getInt(inputBase, input) & wordmask[trailerBytes];
+                trailer = inputBase.getInt(input) & wordmask[trailerBytes];
             }
             else {
                 if (input + trailerBytes > inputLimit) {
@@ -95,13 +95,13 @@ public final class SnappyRawDecompressor
                 }
                 switch (trailerBytes) {
                     case 4:
-                        trailer = (UNSAFE.getByte(inputBase, input + 3) & 0xff) << 24;
+                        trailer = (inputBase.getByte(input + 3) & 0xff) << 24;
                     case 3:
-                        trailer |= (UNSAFE.getByte(inputBase, input + 2) & 0xff) << 16;
+                        trailer |= (inputBase.getByte(input + 2) & 0xff) << 16;
                     case 2:
-                        trailer |= (UNSAFE.getByte(inputBase, input + 1) & 0xff) << 8;
+                        trailer |= (inputBase.getByte(input + 1) & 0xff) << 8;
                     case 1:
-                        trailer |= (UNSAFE.getByte(inputBase, input) & 0xff);
+                        trailer |= (inputBase.getByte(input) & 0xff);
                 }
             }
             if (trailer < 0) {
@@ -132,7 +132,7 @@ public final class SnappyRawDecompressor
                 else {
                     // fast copy. We may over-copy but there's enough room in input and output to not overrun them
                     do {
-                        UNSAFE.putLong(outputBase, output, UNSAFE.getLong(inputBase, input));
+                        UNSAFE.putLong(outputBase, output, inputBase.getLong(input));
                         input += SIZE_OF_LONG;
                         output += SIZE_OF_LONG;
                     }
@@ -157,7 +157,7 @@ public final class SnappyRawDecompressor
                 if (output > fastOutputLimit) {
                     // slow match copy
                     while (output < matchOutputLimit) {
-                        UNSAFE.putByte(outputBase, output++, UNSAFE.getByte(outputBase, matchAddress++));
+                        UNSAFE.putByte(outputBase, output++, outputBase.getByte(matchAddress++));
                     }
                 }
                 else {
@@ -167,19 +167,19 @@ public final class SnappyRawDecompressor
                         int increment32 = DEC_32_TABLE[matchOffset];
                         int decrement64 = DEC_64_TABLE[matchOffset];
 
-                        UNSAFE.putByte(outputBase, output, UNSAFE.getByte(outputBase, matchAddress));
-                        UNSAFE.putByte(outputBase, output + 1, UNSAFE.getByte(outputBase, matchAddress + 1));
-                        UNSAFE.putByte(outputBase, output + 2, UNSAFE.getByte(outputBase, matchAddress + 2));
-                        UNSAFE.putByte(outputBase, output + 3, UNSAFE.getByte(outputBase, matchAddress + 3));
+                        UNSAFE.putByte(outputBase, output, outputBase.getByte(matchAddress));
+                        UNSAFE.putByte(outputBase, output + 1, outputBase.getByte(matchAddress + 1));
+                        UNSAFE.putByte(outputBase, output + 2, outputBase.getByte(matchAddress + 2));
+                        UNSAFE.putByte(outputBase, output + 3, outputBase.getByte(matchAddress + 3));
                         output += SIZE_OF_INT;
                         matchAddress += increment32;
 
-                        UNSAFE.putInt(outputBase, output, UNSAFE.getInt(outputBase, matchAddress));
+                        UNSAFE.putInt(outputBase, output, outputBase.getInt(matchAddress));
                         output += SIZE_OF_INT;
                         matchAddress -= decrement64;
                     }
                     else {
-                        UNSAFE.putLong(outputBase, output, UNSAFE.getLong(outputBase, matchAddress));
+                        UNSAFE.putLong(outputBase, output, outputBase.getLong(matchAddress));
                         matchAddress += SIZE_OF_LONG;
                         output += SIZE_OF_LONG;
                     }
@@ -190,18 +190,18 @@ public final class SnappyRawDecompressor
                         }
 
                         while (output < fastOutputLimit) {
-                            UNSAFE.putLong(outputBase, output, UNSAFE.getLong(outputBase, matchAddress));
+                            UNSAFE.putLong(outputBase, output, outputBase.getLong(matchAddress));
                             matchAddress += SIZE_OF_LONG;
                             output += SIZE_OF_LONG;
                         }
 
                         while (output < matchOutputLimit) {
-                            UNSAFE.putByte(outputBase, output++, UNSAFE.getByte(outputBase, matchAddress++));
+                            UNSAFE.putByte(outputBase, output++, outputBase.getByte(matchAddress++));
                         }
                     }
                     else {
                         while (output < matchOutputLimit) {
-                            UNSAFE.putLong(outputBase, output, UNSAFE.getLong(outputBase, matchAddress));
+                            UNSAFE.putLong(outputBase, output, outputBase.getLong(matchAddress));
                             matchAddress += SIZE_OF_LONG;
                             output += SIZE_OF_LONG;
                         }
@@ -309,6 +309,6 @@ public final class SnappyRawDecompressor
         if (address >= limit) {
             throw new MalformedInputException(limit - address, "Input is truncated");
         }
-        return UNSAFE.getByte(base, address) & 0xFF;
+        return base.getByte(address) & 0xFF;
     }
 }
