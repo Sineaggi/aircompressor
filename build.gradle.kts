@@ -42,3 +42,19 @@ tasks.test {
     }
     maxHeapSize = "2G"
 }
+
+tasks.withType<Test>().configureEach {
+    useTestNG {
+        parallel = "methods"
+        threadCount = 4
+    }
+    maxHeapSize = "2G"
+}
+
+tasks.named<JavaCompile>("compileJava19Java") {
+    options.compilerArgs = listOf("--enable-preview")
+}
+
+tasks.named<Test>("java19Test") {
+    jvmArgs("--enable-preview")
+}
