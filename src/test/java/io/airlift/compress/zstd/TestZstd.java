@@ -95,7 +95,8 @@ public class TestZstd
 
         assertThatThrownBy(() -> getDecompressor().decompress(compressed, 0, compressed.length, output, 0, output.length))
                 .isInstanceOf(MalformedInputException.class)
-                .hasMessageStartingWith("Input is corrupted: offset=894");
+                // this was changed from 894 tp 878 (-16) due to absolute array offsets no longer being computed
+                .hasMessageStartingWith("Input is corrupted: offset=878");
     }
 
     @Test
