@@ -34,23 +34,23 @@ public final class Lz4RawDecompressor
 
     public static int decompress(
             final ArrayUtil inputBase,
-            final long inputAddress,
+            final long inputOffset,
             final long inputLimit,
             final ArrayUtil outputBase,
-            final long outputAddress,
+            final long outputOffset,
             final long outputLimit)
     {
         final long fastOutputLimit = outputLimit - SIZE_OF_LONG; // maximum offset in output buffer to which it's safe to write long-at-a-time
 
-        long input = inputAddress;
-        long output = outputAddress;
+        long input = inputOffset;
+        long output = outputOffset;
 
-        if (inputAddress == inputLimit) {
+        if (inputOffset == inputLimit) {
             throw new MalformedInputException(0, "input is empty");
         }
 
-        if (outputAddress == outputLimit) {
-            if (inputLimit - inputAddress == 1 && inputBase.getByte(inputAddress) == 0) {
+        if (outputOffset == outputLimit) {
+            if (inputLimit - inputOffset == 1 && inputBase.getByte(inputOffset) == 0) {
                 return 0;
             }
             return -1;
@@ -76,11 +76,11 @@ public final class Lz4RawDecompressor
             if (literalOutputLimit > (fastOutputLimit - MIN_MATCH) || literalEnd > inputLimit - (OFFSET_SIZE + TOKEN_SIZE + LAST_LITERAL_SIZE)) {
                 // copy the last literal and finish
                 if (literalOutputLimit > outputLimit) {
-                    throw new MalformedInputException(input - inputAddress, "attempt to write last literal outside of destination buffer");
+                    throw new MalformedInputException(input - inputOffset, "attempt to write last literal outside of destination buffer");
                 }
 
                 if (literalEnd != inputLimit) {
-                    throw new MalformedInputException(input - inputAddress, "all input must be consumed");
+                    throw new MalformedInputException(input - inputOffset, "all input must be consumed");
                 }
 
                 // slow, precise copy
@@ -108,8 +108,8 @@ public final class Lz4RawDecompressor
             input += SIZE_OF_SHORT;
 
             long matchAddress = output - offset;
-            if (matchAddress < outputAddress) {
-                throw new MalformedInputException(input - inputAddress, "offset outside destination buffer");
+            if (matchAddress < outputOffset) {
+                throw new MalformedInputException(input - inputOffset, "offset outside destination buffer");
             }
 
             // compute match length
@@ -118,7 +118,7 @@ public final class Lz4RawDecompressor
                 int value;
                 do {
                     if (input > inputLimit - LAST_LITERAL_SIZE) {
-                        throw new MalformedInputException(input - inputAddress);
+                        throw new MalformedInputException(input - inputOffset);
                     }
 
                     value = inputBase.getByte(input++) & 0xFF;
@@ -158,7 +158,7 @@ public final class Lz4RawDecompressor
 
             if (matchOutputLimit > fastOutputLimit - MIN_MATCH) {
                 if (matchOutputLimit > outputLimit - LAST_LITERAL_SIZE) {
-                    throw new MalformedInputException(input - inputAddress, String.format("last %s bytes must be literals", LAST_LITERAL_SIZE));
+                    throw new MalformedInputException(input - inputOffset, String.format("last %s bytes must be literals", LAST_LITERAL_SIZE));
                 }
 
                 while (output < fastOutputLimit) {
@@ -185,6 +185,6 @@ public final class Lz4RawDecompressor
             output = matchOutputLimit; // correction in case we overcopied
         }
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 }

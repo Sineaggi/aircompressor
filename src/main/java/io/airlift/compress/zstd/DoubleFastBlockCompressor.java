@@ -23,7 +23,7 @@ class DoubleFastBlockCompressor
     private static final int SEARCH_STRENGTH = 8;
     private static final int REP_MOVE = Constants.REPEATED_OFFSET_COUNT - 1;
 
-    public int compressBlock(ArrayUtil inputBase, final long inputAddress, int inputSize, SequenceStore output, BlockCompressionState state, RepeatedOffsets offsets, CompressionParameters parameters)
+    public int compressBlock(ArrayUtil inputBase, final long inputOffset, int inputSize, SequenceStore output, BlockCompressionState state, RepeatedOffsets offsets, CompressionParameters parameters)
     {
         int matchSearchLength = Math.max(parameters.getSearchLength(), 4);
 
@@ -40,11 +40,11 @@ class DoubleFastBlockCompressor
         int[] shortHashTable = state.chainTable;
         int shortHashBits = parameters.getChainLog();
 
-        final long inputEnd = inputAddress + inputSize;
+        final long inputEnd = inputOffset + inputSize;
         final long inputLimit = inputEnd - SIZE_OF_LONG; // We read a long at a time for computing the hashes
 
-        long input = inputAddress;
-        long anchor = inputAddress;
+        long input = inputOffset;
+        long anchor = inputOffset;
 
         int offset1 = offsets.getOffset0();
         int offset2 = offsets.getOffset1();
@@ -180,14 +180,14 @@ class DoubleFastBlockCompressor
     // TODO: same as LZ4RawCompressor.count
 
     /**
-     * matchAddress must be < inputAddress
+     * matchAddress must be < inputOffset
      */
-    public static int count(ArrayUtil inputBase, final long inputAddress, final long inputLimit, final long matchAddress)
+    public static int count(ArrayUtil inputBase, final long inputOffset, final long inputLimit, final long matchAddress)
     {
-        long input = inputAddress;
+        long input = inputOffset;
         long match = matchAddress;
 
-        int remaining = (int) (inputLimit - inputAddress);
+        int remaining = (int) (inputLimit - inputOffset);
 
         // first, compare long at a time
         int count = 0;
@@ -211,19 +211,19 @@ class DoubleFastBlockCompressor
         return count;
     }
 
-    private static int hash(ArrayUtil inputBase, long inputAddress, int bits, int matchSearchLength)
+    private static int hash(ArrayUtil inputBase, long inputOffset, int bits, int matchSearchLength)
     {
         switch (matchSearchLength) {
             case 8:
-                return hash8(inputBase.getLong(inputAddress), bits);
+                return hash8(inputBase.getLong(inputOffset), bits);
             case 7:
-                return hash7(inputBase.getLong(inputAddress), bits);
+                return hash7(inputBase.getLong(inputOffset), bits);
             case 6:
-                return hash6(inputBase.getLong(inputAddress), bits);
+                return hash6(inputBase.getLong(inputOffset), bits);
             case 5:
-                return hash5(inputBase.getLong(inputAddress), bits);
+                return hash5(inputBase.getLong(inputOffset), bits);
             default:
-                return hash4(inputBase.getInt(inputAddress), bits);
+                return hash4(inputBase.getInt(inputOffset), bits);
         }
     }
 

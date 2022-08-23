@@ -35,12 +35,12 @@ public class ZstdDecompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = inputOffset;
-        long inputLimit = inputAddress + inputLength;
-        long outputAddress = outputOffset;
-        long outputLimit = outputAddress + maxOutputLength;
+        long inputOffset = inputOffset;
+        long inputLimit = inputOffset + inputLength;
+        long outputOffset = outputOffset;
+        long outputLimit = outputOffset + maxOutputLength;
 
-        return decompressor.decompress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit);
+        return decompressor.decompress(ArrayUtil.ofArray(input), inputOffset, inputLimit, ArrayUtil.ofArray(output), outputOffset, outputLimit);
     }
 
     @Override
@@ -55,17 +55,17 @@ public class ZstdDecompressor
         Buffer output = outputBuffer;
 
         ArrayUtil inputBase;
-        long inputAddress;
+        long inputOffset;
         long inputLimit;
         if (input.isDirect()) {
             inputBase = ArrayUtil.ofBuffer(input);
             long address = 0;
-            inputAddress = address + input.position();
+            inputOffset = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
             inputBase = ArrayUtil.ofArray((byte[])input.array());
-            inputAddress = input.arrayOffset() + input.position();
+            inputOffset = input.arrayOffset() + input.position();
             inputLimit = input.arrayOffset() + input.limit();
         }
         else {
@@ -73,17 +73,17 @@ public class ZstdDecompressor
         }
 
         ArrayUtil outputBase;
-        long outputAddress;
+        long outputOffset;
         long outputLimit;
         if (output.isDirect()) {
             outputBase = ArrayUtil.ofBuffer(output);
             long address = 0;
-            outputAddress = address + output.position();
+            outputOffset = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
             outputBase = ArrayUtil.ofArray((byte[])output.array());
-            outputAddress = output.arrayOffset() + output.position();
+            outputOffset = output.arrayOffset() + output.position();
             outputLimit = output.arrayOffset() + output.limit();
         }
         else {
@@ -96,7 +96,7 @@ public class ZstdDecompressor
         // collected in a block, and technically, the JVM is allowed to eliminate these locks.
         synchronized (input) {
             synchronized (output) {
-                int written = new ZstdFrameDecompressor().decompress(inputBase, inputAddress, inputLimit, outputBase, outputAddress, outputLimit);
+                int written = new ZstdFrameDecompressor().decompress(inputBase, inputOffset, inputLimit, outputBase, outputOffset, outputLimit);
                 output.position(output.position() + written);
             }
         }

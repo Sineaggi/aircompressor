@@ -27,22 +27,22 @@ class BitOutputStream
             0x3FFFFFFF, 0x7FFFFFFF}; // up to 31 bits
 
     private final ArrayUtil outputBase;
-    private final long outputAddress;
+    private final long outputOffset;
     private final long outputLimit;
 
     private long container;
     private int bitCount;
     private long currentAddress;
 
-    public BitOutputStream(ArrayUtil outputBase, long outputAddress, int outputSize)
+    public BitOutputStream(ArrayUtil outputBase, long outputOffset, int outputSize)
     {
         checkArgument(outputSize >= SIZE_OF_LONG, "Output buffer too small");
 
         this.outputBase = outputBase;
-        this.outputAddress = outputAddress;
-        outputLimit = this.outputAddress + outputSize - SIZE_OF_LONG;
+        this.outputOffset = outputOffset;
+        outputLimit = this.outputOffset + outputSize - SIZE_OF_LONG;
 
-        currentAddress = this.outputAddress;
+        currentAddress = this.outputOffset;
     }
 
     public void addBits(int value, int bits)
@@ -84,6 +84,6 @@ class BitOutputStream
             return 0;
         }
 
-        return (int) ((currentAddress - outputAddress) + (bitCount > 0 ? 1 : 0));
+        return (int) ((currentAddress - outputOffset) + (bitCount > 0 ? 1 : 0));
     }
 }

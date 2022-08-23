@@ -23,11 +23,11 @@ class FseTableReader
     private final short[] nextSymbol = new short[MAX_SYMBOL + 1];
     private final short[] normalizedCounters = new short[MAX_SYMBOL + 1];
 
-    public int readFseTable(FiniteStateEntropy.Table table, ArrayUtil inputBase, long inputAddress, long inputLimit, int maxSymbol, int maxTableLog)
+    public int readFseTable(FiniteStateEntropy.Table table, ArrayUtil inputBase, long inputOffset, long inputLimit, int maxSymbol, int maxTableLog)
     {
         // read table headers
-        long input = inputAddress;
-        verify(inputLimit - inputAddress >= 4, input, "Not enough input bytes");
+        long input = inputOffset;
+        verify(inputLimit - inputOffset >= 4, input, "Not enough input bytes");
 
         int threshold;
         int symbolNumber = 0;
@@ -155,7 +155,7 @@ class FseTableReader
             table.newState[i] = (short) ((nextState << table.numberOfBits[i]) - tableSize);
         }
 
-        return (int) (input - inputAddress);
+        return (int) (input - inputOffset);
     }
 
     public static void initializeRleTable(FiniteStateEntropy.Table table, byte value)

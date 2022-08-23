@@ -34,14 +34,14 @@ class FiniteStateEntropy
     {
     }
 
-    public static int decompress(FiniteStateEntropy.Table table, final ArrayUtil inputBase, final long inputAddress, final long inputLimit, byte[] outputBuffer)
+    public static int decompress(FiniteStateEntropy.Table table, final ArrayUtil inputBase, final long inputOffset, final long inputLimit, byte[] outputBuffer)
     {
         final ArrayUtil outputBase = ArrayUtil.ofArray(outputBuffer);
-        final long outputAddress = ARRAY_BYTE_BASE_OFFSET;
-        final long outputLimit = outputAddress + outputBuffer.length;
+        final long outputOffset = ARRAY_BYTE_BASE_OFFSET;
+        final long outputLimit = outputOffset + outputBuffer.length;
 
-        long input = inputAddress;
-        long output = outputAddress;
+        long input = inputOffset;
+        long output = outputOffset;
 
         // initialize bit stream
         BitInputStream.Initializer initializer = new BitInputStream.Initializer(inputBase, input, inputLimit);
@@ -146,19 +146,19 @@ class FiniteStateEntropy
             }
         }
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
-    public static int compress(ArrayUtil outputBase, long outputAddress, int outputSize, byte[] input, int inputSize, FseCompressionTable table)
+    public static int compress(ArrayUtil outputBase, long outputOffset, int outputSize, byte[] input, int inputSize, FseCompressionTable table)
     {
-        return compress(outputBase, outputAddress, outputSize, input, ARRAY_BYTE_BASE_OFFSET, inputSize, table);
+        return compress(outputBase, outputOffset, outputSize, input, ARRAY_BYTE_BASE_OFFSET, inputSize, table);
     }
 
-    public static int compress(ArrayUtil outputBase, long outputAddress, int outputSize, Object inputBase, long inputAddress, int inputSize, FseCompressionTable table)
+    public static int compress(ArrayUtil outputBase, long outputOffset, int outputSize, Object inputBase, long inputOffset, int inputSize, FseCompressionTable table)
     {
         checkArgument(outputSize >= SIZE_OF_LONG, "Output buffer too small");
 
-        final long start = inputAddress;
+        final long start = inputOffset;
         final long inputLimit = start + inputSize;
 
         long input = inputLimit;
@@ -167,7 +167,7 @@ class FiniteStateEntropy
             return 0;
         }
 
-        BitOutputStream stream = new BitOutputStream(outputBase, outputAddress, outputSize);
+        BitOutputStream stream = new BitOutputStream(outputBase, outputOffset, outputSize);
 
         int state1;
         int state2;
@@ -403,13 +403,13 @@ class FiniteStateEntropy
         return 0;
     }
 
-    public static int writeNormalizedCounts(ArrayUtil outputBase, long outputAddress, int outputSize, short[] normalizedCounts, int maxSymbol, int tableLog)
+    public static int writeNormalizedCounts(ArrayUtil outputBase, long outputOffset, int outputSize, short[] normalizedCounts, int maxSymbol, int tableLog)
     {
         checkArgument(tableLog <= MAX_TABLE_LOG, "FSE table too large");
         checkArgument(tableLog >= MIN_TABLE_LOG, "FSE table too small");
 
-        long output = outputAddress;
-        long outputLimit = outputAddress + outputSize;
+        long output = outputOffset;
+        long outputLimit = outputOffset + outputSize;
 
         int tableSize = 1 << tableLog;
 
@@ -516,7 +516,7 @@ class FiniteStateEntropy
 
         checkArgument(symbol <= maxSymbol + 1, "Error"); // TODO
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
     public static final class Table

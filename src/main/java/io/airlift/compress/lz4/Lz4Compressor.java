@@ -43,10 +43,7 @@ public class Lz4Compressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = 0 + inputOffset;
-        long outputAddress = 0 + outputOffset;
-
-        return Lz4RawCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputLength, ArrayUtil.ofArray(output), outputAddress, maxOutputLength, table);
+        return Lz4RawCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputLength, ArrayUtil.ofArray(output), outputOffset, maxOutputLength, table);
     }
 
     @Override
@@ -59,41 +56,55 @@ public class Lz4Compressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
+        ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
+        long inputOffset = inputBase.position();
+        long inputLimit = inputBase.limit();
+
+        ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
+        long outputOffset = inputBase.position();
+        long outputLimit = inputBase.limit();
+
+        /*
         ArrayUtil inputBase;
-        long inputAddress;
+        long inputOffset;
         long inputLimit;
         if (input.isDirect()) {
             inputBase = ArrayUtil.ofBuffer(input);
             long address = 0;
-            inputAddress = address + input.position();
+            inputOffset = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
             inputBase = ArrayUtil.ofArray((byte[])input.array());
-            inputAddress = input.arrayOffset() + input.position();
+            inputOffset = input.arrayOffset() + input.position();
             inputLimit = input.arrayOffset() + input.limit();
         }
         else {
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
+        inputBase = ArrayUtil.ofBuffer(input);
+        inputOffset = inputBase.position();
+        inputLimit = inputBase.limit();
+
         ArrayUtil outputBase;
-        long outputAddress;
+        long outputOffset;
         long outputLimit;
         if (output.isDirect()) {
             outputBase = ArrayUtil.ofBuffer(output);
             long address = 0;
-            outputAddress = address + output.position();
+            outputOffset = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
             outputBase = ArrayUtil.ofArray((byte[])output.array());
-            outputAddress = 0 + output.arrayOffset() + output.position();
+            outputOffset = 0 + output.arrayOffset() + output.position();
             outputLimit = 0 + output.arrayOffset() + output.limit();
         }
         else {
             throw new IllegalArgumentException("Unsupported output ByteBuffer implementation " + output.getClass().getName());
         }
+         */
 
         // HACK: Assure JVM does not collect Slice wrappers while compressing, since the
         // collection may trigger freeing of the underlying memory resulting in a segfault
@@ -103,11 +114,11 @@ public class Lz4Compressor
             synchronized (output) {
                 int written = Lz4RawCompressor.compress(
                         inputBase,
-                        inputAddress,
-                        (int) (inputLimit - inputAddress),
+                        inputOffset,
+                        (int) (inputLimit - inputOffset),
                         outputBase,
-                        outputAddress,
-                        outputLimit - outputAddress,
+                        outputOffset,
+                        outputLimit - outputOffset,
                         table);
                 output.position(output.position() + written);
             }

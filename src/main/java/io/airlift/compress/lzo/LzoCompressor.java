@@ -45,10 +45,10 @@ public class LzoCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = ARRAY_BYTE_BASE_OFFSET + inputOffset;
-        long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
+        long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
+        long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
 
-        return LzoRawCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputLength, ArrayUtil.ofArray(output), outputAddress, maxOutputLength, table);
+        return LzoRawCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputLength, ArrayUtil.ofArray(output), outputOffset, maxOutputLength, table);
     }
 
     @Override
@@ -62,15 +62,15 @@ public class LzoCompressor
         Buffer output = outputBuffer;
 
         ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
-        long inputAddress;
+        long inputOffset;
         long inputLimit;
         if (input.isDirect()) {
             long address = getAddress(input);
-            inputAddress = address + input.position();
+            inputOffset = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
+            inputOffset = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
         else {
@@ -78,15 +78,15 @@ public class LzoCompressor
         }
 
         ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
-        long outputAddress;
+        long outputOffset;
         long outputLimit;
         if (output.isDirect()) {
             long address = getAddress(output);
-            outputAddress = address + output.position();
+            outputOffset = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
+            outputOffset = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }
         else {
@@ -101,11 +101,11 @@ public class LzoCompressor
             synchronized (output) {
                 int written = LzoRawCompressor.compress(
                         inputBase,
-                        inputAddress,
-                        (int) (inputLimit - inputAddress),
+                        inputOffset,
+                        (int) (inputLimit - inputOffset),
                         outputBase,
-                        outputAddress,
-                        outputLimit - outputAddress,
+                        outputOffset,
+                        outputLimit - outputOffset,
                         table);
                 output.position(output.position() + written);
             }

@@ -34,20 +34,20 @@ public final class SnappyRawDecompressor
 
     public static int decompress(
             final ArrayUtil inputBase,
-            final long inputAddress,
+            final long inputOffset,
             final long inputLimit,
             final ArrayUtil outputBase,
-            final long outputAddress,
+            final long outputOffset,
             final long outputLimit)
     {
         // Read the uncompressed length from the front of the input
-        long input = inputAddress;
+        long input = inputOffset;
         int[] varInt = readUncompressedLength(inputBase, input, inputLimit);
         int expectedLength = varInt[0];
         input += varInt[1];
 
-        SnappyInternalUtils.checkArgument(expectedLength <= (outputLimit - outputAddress),
-                "Uncompressed length %s must be less than %s", expectedLength, (outputLimit - outputAddress));
+        SnappyInternalUtils.checkArgument(expectedLength <= (outputLimit - outputOffset),
+                "Uncompressed length %s must be less than %s", expectedLength, (outputLimit - outputOffset));
 
         // Process the entire input
         int uncompressedSize = uncompressAll(
@@ -55,7 +55,7 @@ public final class SnappyRawDecompressor
                 input,
                 inputLimit,
                 outputBase,
-                outputAddress,
+                outputOffset,
                 outputLimit);
 
         if (!(expectedLength == uncompressedSize)) {
@@ -69,16 +69,16 @@ public final class SnappyRawDecompressor
 
     private static int uncompressAll(
             final ArrayUtil inputBase,
-            final long inputAddress,
+            final long inputOffset,
             final long inputLimit,
             final ArrayUtil outputBase,
-            final long outputAddress,
+            final long outputOffset,
             final long outputLimit)
     {
         final long fastOutputLimit = outputLimit - SIZE_OF_LONG; // maximum offset in output buffer to which it's safe to write long-at-a-time
 
-        long output = outputAddress;
-        long input = inputAddress;
+        long output = outputOffset;
+        long input = inputOffset;
 
         while (input < inputLimit) {
             int opCode = inputBase.getByte(input++) & 0xFF;
@@ -91,7 +91,7 @@ public final class SnappyRawDecompressor
             }
             else {
                 if (input + trailerBytes > inputLimit) {
-                    throw new MalformedInputException(input - inputAddress);
+                    throw new MalformedInputException(input - inputOffset);
                 }
                 switch (trailerBytes) {
                     case 4:
@@ -105,7 +105,7 @@ public final class SnappyRawDecompressor
                 }
             }
             if (trailer < 0) {
-                throw new MalformedInputException(input - inputAddress);
+                throw new MalformedInputException(input - inputOffset);
             }
             input += trailerBytes;
 
@@ -121,7 +121,7 @@ public final class SnappyRawDecompressor
                 long literalOutputLimit = output + literalLength;
                 if (literalOutputLimit > fastOutputLimit || input + literalLength > inputLimit - SIZE_OF_LONG) {
                     if (literalOutputLimit > outputLimit) {
-                        throw new MalformedInputException(input - inputAddress);
+                        throw new MalformedInputException(input - inputOffset);
                     }
 
                     // slow, precise copy
@@ -149,8 +149,8 @@ public final class SnappyRawDecompressor
                 matchOffset += trailer;
 
                 long matchAddress = output - matchOffset;
-                if (matchAddress < outputAddress || output + length > outputLimit) {
-                    throw new MalformedInputException(input - inputAddress);
+                if (matchAddress < outputOffset || output + length > outputLimit) {
+                    throw new MalformedInputException(input - inputOffset);
                 }
                 long matchOutputLimit = output + length;
 
@@ -186,7 +186,7 @@ public final class SnappyRawDecompressor
 
                     if (matchOutputLimit > fastOutputLimit) {
                         if (matchOutputLimit > outputLimit) {
-                            throw new MalformedInputException(input - inputAddress);
+                            throw new MalformedInputException(input - inputOffset);
                         }
 
                         while (output < fastOutputLimit) {
@@ -211,7 +211,7 @@ public final class SnappyRawDecompressor
             }
         }
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
     // Mapping from i in range [0,4] to a mask to extract the bottom 8*i bits

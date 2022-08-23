@@ -198,11 +198,11 @@ final class HuffmanCompressionTable
         output.addBitsFast(values[symbol], numberOfBits[symbol]);
     }
 
-    public int write(ArrayUtil outputBase, long outputAddress, int outputSize, HuffmanTableWriterWorkspace workspace)
+    public int write(ArrayUtil outputBase, long outputOffset, int outputSize, HuffmanTableWriterWorkspace workspace)
     {
         byte[] weights = workspace.weights;
 
-        long output = outputAddress;
+        long output = outputOffset;
 
         int maxNumberOfBits = this.maxNumberOfBits;
         int maxSymbol = this.maxSymbol;
@@ -257,7 +257,7 @@ final class HuffmanCompressionTable
                 output++;
             }
 
-            return (int) (output - outputAddress);
+            return (int) (output - outputOffset);
         }
     }
 
@@ -391,7 +391,7 @@ final class HuffmanCompressionTable
     /**
      * All elements within weightTable must be <= Huffman.MAX_TABLE_LOG
      */
-    private static int compressWeights(ArrayUtil outputBase, long outputAddress, int outputSize, byte[] weights, int weightsLength, HuffmanTableWriterWorkspace workspace)
+    private static int compressWeights(ArrayUtil outputBase, long outputOffset, int outputSize, byte[] weights, int weightsLength, HuffmanTableWriterWorkspace workspace)
     {
         if (weightsLength <= 1) {
             return 0; // Not compressible
@@ -415,8 +415,8 @@ final class HuffmanCompressionTable
         int tableLog = FiniteStateEntropy.optimalTableLog(MAX_FSE_TABLE_LOG, weightsLength, maxSymbol);
         FiniteStateEntropy.normalizeCounts(normalizedCounts, tableLog, counts, weightsLength, maxSymbol);
 
-        long output = outputAddress;
-        long outputLimit = outputAddress + outputSize;
+        long output = outputOffset;
+        long outputLimit = outputOffset + outputSize;
 
         // Write table description header
         int headerSize = FiniteStateEntropy.writeNormalizedCounts(outputBase, output, outputSize, normalizedCounts, maxSymbol, tableLog);
@@ -431,6 +431,6 @@ final class HuffmanCompressionTable
         }
         output += compressedSize;
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 }

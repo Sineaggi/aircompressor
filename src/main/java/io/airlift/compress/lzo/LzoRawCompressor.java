@@ -69,10 +69,10 @@ public final class LzoRawCompressor
 
     public static int compress(
             final ArrayUtil inputBase,
-            final long inputAddress,
+            final long inputOffset,
             final int inputLength,
             final ArrayUtil outputBase,
-            final long outputAddress,
+            final long outputOffset,
             final long maxOutputLength,
             final int[] table)
     {
@@ -94,23 +94,23 @@ public final class LzoRawCompressor
             return 0;
         }
 
-        long input = inputAddress;
-        long output = outputAddress;
+        long input = inputOffset;
+        long output = outputOffset;
 
-        final long inputLimit = inputAddress + inputLength;
+        final long inputLimit = inputOffset + inputLength;
         final long matchFindLimit = inputLimit - MATCH_FIND_LIMIT;
         final long matchLimit = inputLimit - LAST_LITERAL_SIZE;
 
         if (inputLength < MIN_LENGTH) {
             output = emitLastLiteral(true, outputBase, output, inputBase, input, inputLimit - input);
-            return (int) (output - outputAddress);
+            return (int) (output - outputOffset);
         }
 
         long anchor = input;
 
         // First Byte
         // put position in hash
-        table[hash(inputBase.getLong(input), mask)] = (int) (input - inputAddress);
+        table[hash(inputBase.getLong(input), mask)] = (int) (input - inputOffset);
 
         input++;
         int nextHash = hash(inputBase.getLong(input), mask);
@@ -133,20 +133,20 @@ public final class LzoRawCompressor
 
                 if (nextInputIndex > matchFindLimit) {
                     output = emitLastLiteral(firstLiteral, outputBase, output, inputBase, anchor, inputLimit - anchor);
-                    return (int) (output - outputAddress);
+                    return (int) (output - outputOffset);
                 }
 
                 // get position on hash
-                matchIndex = inputAddress + table[hash];
+                matchIndex = inputOffset + table[hash];
                 nextHash = hash(inputBase.getLong(nextInputIndex), mask);
 
                 // put position on hash
-                table[hash] = (int) (input - inputAddress);
+                table[hash] = (int) (input - inputOffset);
             }
             while (inputBase.getInt(matchIndex) != inputBase.getInt(input) || matchIndex + MAX_DISTANCE < input);
 
             // catch up
-            while ((input > anchor) && (matchIndex > inputAddress) && (inputBase.getByte(input - 1) == inputBase.getByte(matchIndex - 1))) {
+            while ((input > anchor) && (matchIndex > inputOffset) && (inputBase.getByte(input - 1) == inputBase.getByte(matchIndex - 1))) {
                 --input;
                 --matchIndex;
             }
@@ -176,12 +176,12 @@ public final class LzoRawCompressor
                 }
 
                 long position = input - 2;
-                table[hash(inputBase.getLong(position), mask)] = (int) (position - inputAddress);
+                table[hash(inputBase.getLong(position), mask)] = (int) (position - inputOffset);
 
                 // Test next position
                 int hash = hash(inputBase.getLong(input), mask);
-                matchIndex = inputAddress + table[hash];
-                table[hash] = (int) (input - inputAddress);
+                matchIndex = inputOffset + table[hash];
+                table[hash] = (int) (input - inputOffset);
 
                 if (matchIndex + MAX_DISTANCE < input || inputBase.getInt(matchIndex) != inputBase.getInt(input)) {
                     input++;
@@ -197,7 +197,7 @@ public final class LzoRawCompressor
         // Encode Last Literals
         output = emitLastLiteral(false, outputBase, output, inputBase, anchor, inputLimit - anchor);
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
     private static int count(ArrayUtil inputBase, final long start, long matchStart, long matchLimit)
@@ -238,11 +238,11 @@ public final class LzoRawCompressor
             final ArrayUtil outputBase,
             long output,
             final ArrayUtil inputBase,
-            final long inputAddress,
+            final long inputOffset,
             final long literalLength)
     {
         output = encodeLiteralLength(firstLiteral, outputBase, output, literalLength);
-        inputBase.copyMemory(inputAddress, outputBase, output, literalLength);
+        inputBase.copyMemory(inputOffset, outputBase, output, literalLength);
         output += literalLength;
 
         // write stop command
@@ -351,10 +351,10 @@ public final class LzoRawCompressor
         return output;
     }
 
-    private static long encodeOffset(final ArrayUtil outputBase, final long outputAddress, final int offset)
+    private static long encodeOffset(final ArrayUtil outputBase, final long outputOffset, final int offset)
     {
-        outputBase.putShort(outputAddress, (short) (offset << 2));
-        return outputAddress + 2;
+        outputBase.putShort(outputOffset, (short) (offset << 2));
+        return outputOffset + 2;
     }
 
     private static long encodeMatchLength(ArrayUtil outputBase, long output, int matchLength, int baseMatchLength, int command)

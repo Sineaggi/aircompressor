@@ -73,10 +73,10 @@ final class Util
         return cycleLog;
     }
 
-    public static void put24BitLittleEndian(ArrayUtil outputBase, long outputAddress, int value)
+    public static void put24BitLittleEndian(ArrayUtil outputBase, long outputOffset, int value)
     {
-        outputBase.putShort(outputAddress, (short) value);
-        outputBase.putByte(outputAddress + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
+        outputBase.putShort(outputOffset, (short) value);
+        outputBase.putByte(outputOffset + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
     }
 
     // provides the minimum logSize to safely represent a distribution

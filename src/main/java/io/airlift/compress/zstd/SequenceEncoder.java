@@ -62,10 +62,10 @@ class SequenceEncoder
     {
     }
 
-    public static int compressSequences(ArrayUtil outputBase, final long outputAddress, int outputSize, SequenceStore sequences, CompressionParameters.Strategy strategy, SequenceEncodingContext workspace)
+    public static int compressSequences(ArrayUtil outputBase, final long outputOffset, int outputSize, SequenceStore sequences, CompressionParameters.Strategy strategy, SequenceEncodingContext workspace)
     {
-        long output = outputAddress;
-        long outputLimit = outputAddress + outputSize;
+        long output = outputOffset;
+        long outputLimit = outputOffset + outputSize;
 
         checkArgument(outputLimit - output > 3 /* max sequence count Size */ + 1 /* encoding type flags */, "Output buffer too small");
 
@@ -87,7 +87,7 @@ class SequenceEncoder
         }
 
         if (sequenceCount == 0) {
-            return (int) (output - outputAddress);
+            return (int) (output - outputOffset);
         }
 
         // flags for FSE encoding type
@@ -213,7 +213,7 @@ class SequenceEncoder
 
         output += encodeSequences(outputBase, output, outputLimit, matchLengthTable, offsetCodeTable, literalLengthTable, sequences);
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
     private static int buildCompressionTable(FseCompressionTable table, ArrayUtil outputBase, long output, long outputLimit, int sequenceCount, int maxTableLog, byte[] codes, int[] counts, int maxSymbol, short[] normalizedCounts)

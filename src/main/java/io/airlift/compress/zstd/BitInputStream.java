@@ -35,23 +35,23 @@ class BitInputStream
         return startAddress == currentAddress && bitsConsumed == Long.SIZE;
     }
 
-    static long readTail(ArrayUtil arrayUtil, long inputAddress, int inputSize)
+    static long readTail(ArrayUtil arrayUtil, long inputOffset, int inputSize)
     {
-        long bits = arrayUtil.getByte(inputAddress) & 0xFF;
+        long bits = arrayUtil.getByte(inputOffset) & 0xFF;
 
         switch (inputSize) {
             case 7:
-                bits |= (arrayUtil.getByte(inputAddress + 6) & 0xFFL) << 48;
+                bits |= (arrayUtil.getByte(inputOffset + 6) & 0xFFL) << 48;
             case 6:
-                bits |= (arrayUtil.getByte(inputAddress + 5) & 0xFFL) << 40;
+                bits |= (arrayUtil.getByte(inputOffset + 5) & 0xFFL) << 40;
             case 5:
-                bits |= (arrayUtil.getByte(inputAddress + 4) & 0xFFL) << 32;
+                bits |= (arrayUtil.getByte(inputOffset + 4) & 0xFFL) << 32;
             case 4:
-                bits |= (arrayUtil.getByte(inputAddress + 3) & 0xFFL) << 24;
+                bits |= (arrayUtil.getByte(inputOffset + 3) & 0xFFL) << 24;
             case 3:
-                bits |= (arrayUtil.getByte(inputAddress + 2) & 0xFFL) << 16;
+                bits |= (arrayUtil.getByte(inputOffset + 2) & 0xFFL) << 16;
             case 2:
-                bits |= (arrayUtil.getByte(inputAddress + 1) & 0xFFL) << 8;
+                bits |= (arrayUtil.getByte(inputOffset + 1) & 0xFFL) << 8;
         }
 
         return bits;

@@ -43,10 +43,10 @@ public class ZstdCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = 0 + inputOffset;
-        long outputAddress = 0 + outputOffset;
+        long inputOffset = 0 + inputOffset;
+        long outputOffset = 0 + outputOffset;
 
-        return ZstdFrameCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputAddress + inputLength, ArrayUtil.ofArray(output), outputAddress, outputAddress + maxOutputLength, CompressionParameters.DEFAULT_COMPRESSION_LEVEL);
+        return ZstdFrameCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputOffset + inputLength, ArrayUtil.ofArray(output), outputOffset, outputOffset + maxOutputLength, CompressionParameters.DEFAULT_COMPRESSION_LEVEL);
     }
 
     @Override
@@ -60,17 +60,17 @@ public class ZstdCompressor
         Buffer output = outputBuffer;
 
         ArrayUtil inputBase;
-        long inputAddress;
+        long inputOffset;
         long inputLimit;
         if (input.isDirect()) {
             inputBase = ArrayUtil.ofBuffer(input);
             long address = 0;
-            inputAddress = address + input.position();
+            inputOffset = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
             inputBase = ArrayUtil.ofArray((byte[])input.array());
-            inputAddress = input.arrayOffset() + input.position();
+            inputOffset = input.arrayOffset() + input.position();
             inputLimit = input.arrayOffset() + input.limit();
         }
         else {
@@ -78,17 +78,17 @@ public class ZstdCompressor
         }
 
         ArrayUtil outputBase;
-        long outputAddress;
+        long outputOffset;
         long outputLimit;
         if (output.isDirect()) {
             outputBase = ArrayUtil.ofBuffer(output);
             long address = 0;
-            outputAddress = address + output.position();
+            outputOffset = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
             outputBase = ArrayUtil.ofArray((byte[])output.array());
-            outputAddress = output.arrayOffset() + output.position();
+            outputOffset = output.arrayOffset() + output.position();
             outputLimit = output.arrayOffset() + output.limit();
         }
         else {
@@ -103,10 +103,10 @@ public class ZstdCompressor
             synchronized (output) {
                 int written = ZstdFrameCompressor.compress(
                         inputBase,
-                        inputAddress,
+                        inputOffset,
                         inputLimit,
                         outputBase,
-                        outputAddress,
+                        outputOffset,
                         outputLimit,
                         CompressionParameters.DEFAULT_COMPRESSION_LEVEL);
                 output.position(output.position() + written);

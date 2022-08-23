@@ -22,12 +22,12 @@ class HuffmanCompressor
     {
     }
 
-    public static int compress4streams(ArrayUtil outputBase, long outputAddress, int outputSize, ArrayUtil inputBase, long inputAddress, int inputSize, HuffmanCompressionTable table)
+    public static int compress4streams(ArrayUtil outputBase, long outputOffset, int outputSize, ArrayUtil inputBase, long inputOffset, int inputSize, HuffmanCompressionTable table)
     {
-        long input = inputAddress;
-        long inputLimit = inputAddress + inputSize;
-        long output = outputAddress;
-        long outputLimit = outputAddress + outputSize;
+        long input = inputOffset;
+        long inputLimit = inputOffset + inputSize;
+        long output = outputOffset;
+        long outputLimit = outputOffset + outputSize;
 
         int segmentSize = (inputSize + 3) / 4;
 
@@ -48,7 +48,7 @@ class HuffmanCompressor
         if (compressedSize == 0) {
             return 0;
         }
-        outputBase.putShort(outputAddress, (short) compressedSize);
+        outputBase.putShort(outputOffset, (short) compressedSize);
         output += compressedSize;
         input += segmentSize;
 
@@ -57,7 +57,7 @@ class HuffmanCompressor
         if (compressedSize == 0) {
             return 0;
         }
-        outputBase.putShort(outputAddress + SIZE_OF_SHORT, (short) compressedSize);
+        outputBase.putShort(outputOffset + SIZE_OF_SHORT, (short) compressedSize);
         output += compressedSize;
         input += segmentSize;
 
@@ -66,7 +66,7 @@ class HuffmanCompressor
         if (compressedSize == 0) {
             return 0;
         }
-        outputBase.putShort(outputAddress + SIZE_OF_SHORT + SIZE_OF_SHORT, (short) compressedSize);
+        outputBase.putShort(outputOffset + SIZE_OF_SHORT + SIZE_OF_SHORT, (short) compressedSize);
         output += compressedSize;
         input += segmentSize;
 
@@ -77,17 +77,17 @@ class HuffmanCompressor
         }
         output += compressedSize;
 
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
-    public static int compressSingleStream(ArrayUtil outputBase, long outputAddress, int outputSize, ArrayUtil inputBase, long inputAddress, int inputSize, HuffmanCompressionTable table)
+    public static int compressSingleStream(ArrayUtil outputBase, long outputOffset, int outputSize, ArrayUtil inputBase, long inputOffset, int inputSize, HuffmanCompressionTable table)
     {
         if (outputSize < SIZE_OF_LONG) {
             return 0;
         }
 
-        BitOutputStream bitstream = new BitOutputStream(outputBase, outputAddress, outputSize);
-        long input = inputAddress;
+        BitOutputStream bitstream = new BitOutputStream(outputBase, outputOffset, outputSize);
+        long input = inputOffset;
 
         int n = inputSize & ~3; // join to mod 4
 

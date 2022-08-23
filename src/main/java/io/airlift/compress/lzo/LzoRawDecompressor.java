@@ -31,15 +31,15 @@ public final class LzoRawDecompressor
     @SuppressWarnings("InnerAssignment")
     public static int decompress(
             final ArrayUtil inputBase,
-            final long inputAddress,
+            final long inputOffset,
             final long inputLimit,
             final ArrayUtil outputBase,
-            final long outputAddress,
+            final long outputOffset,
             final long outputLimit)
             throws MalformedInputException
     {
         // nothing compresses to nothing
-        if (inputAddress == inputLimit) {
+        if (inputOffset == inputLimit) {
             return 0;
         }
 
@@ -47,14 +47,14 @@ public final class LzoRawDecompressor
         final long fastOutputLimit = outputLimit - SIZE_OF_LONG;
 
         // LZO can concat multiple blocks together so, decode until all input data is consumed
-        long input = inputAddress;
-        long output = outputAddress;
+        long input = inputOffset;
+        long output = outputOffset;
         while (input < inputLimit) {
             boolean firstCommand = true;
             int lastLiteralLength = 0;
             while (true) {
                 if (input >= inputLimit) {
-                    throw new MalformedInputException(input - inputAddress);
+                    throw new MalformedInputException(input - inputOffset);
                 }
                 int command = inputBase.getByte(input++) & 0xFF;
                 // Commands are described using a bit pattern notation:
@@ -109,7 +109,7 @@ public final class LzoRawDecompressor
                         //   HH from trailer [0..7]
                         // offset = (HH << 2) + DD + 1
                         if (input >= inputLimit) {
-                            throw new MalformedInputException(input - inputAddress);
+                            throw new MalformedInputException(input - inputOffset);
                         }
                         matchOffset = (command & 0b1100) >>> 2;
                         matchOffset |= (inputBase.getByte(input++) & 0xFF) << 2;
@@ -130,7 +130,7 @@ public final class LzoRawDecompressor
                         //   HH from trailer [0..7]
                         // offset = (H << 2) + D + 2049
                         if (input >= inputLimit) {
-                            throw new MalformedInputException(input - inputAddress);
+                            throw new MalformedInputException(input - inputOffset);
                         }
                         matchOffset = (command & 0b1100) >>> 2;
                         matchOffset |= (inputBase.getByte(input++) & 0xFF) << 2;
@@ -166,7 +166,7 @@ public final class LzoRawDecompressor
 
                     // read trailer
                     if (input + SIZE_OF_SHORT > inputLimit) {
-                        throw new MalformedInputException(input - inputAddress);
+                        throw new MalformedInputException(input - inputOffset);
                     }
                     int trailer = inputBase.getShort(input) & 0xFFFF;
                     input += SIZE_OF_SHORT;
@@ -207,7 +207,7 @@ public final class LzoRawDecompressor
 
                     // read trailer
                     if (input + SIZE_OF_SHORT > inputLimit) {
-                        throw new MalformedInputException(input - inputAddress);
+                        throw new MalformedInputException(input - inputOffset);
                     }
                     int trailer = inputBase.getShort(input) & 0xFFFF;
                     input += SIZE_OF_SHORT;
@@ -233,7 +233,7 @@ public final class LzoRawDecompressor
                     //   [0..2] from command [2..4]
                     //   [3..10] from trailer [0..7]
                     if (input >= inputLimit) {
-                        throw new MalformedInputException(input - inputAddress);
+                        throw new MalformedInputException(input - inputOffset);
                     }
                     matchOffset = (command & 0b0001_1100) >>> 2;
                     matchOffset |= (inputBase.getByte(input++) & 0xFF) << 3;
@@ -254,8 +254,8 @@ public final class LzoRawDecompressor
                     matchOffset++;
 
                     long matchAddress = output - matchOffset;
-                    if (matchAddress < outputAddress || output + matchLength > outputLimit) {
-                        throw new MalformedInputException(input - inputAddress);
+                    if (matchAddress < outputOffset || output + matchLength > outputLimit) {
+                        throw new MalformedInputException(input - inputOffset);
                     }
                     long matchOutputLimit = output + matchLength;
 
@@ -291,7 +291,7 @@ public final class LzoRawDecompressor
 
                         if (matchOutputLimit >= fastOutputLimit) {
                             if (matchOutputLimit > outputLimit) {
-                                throw new MalformedInputException(input - inputAddress);
+                                throw new MalformedInputException(input - inputOffset);
                             }
 
                             while (output < fastOutputLimit) {
@@ -319,7 +319,7 @@ public final class LzoRawDecompressor
                 long literalOutputLimit = output + literalLength;
                 if (literalOutputLimit > fastOutputLimit || input + literalLength > inputLimit - SIZE_OF_LONG) {
                     if (literalOutputLimit > outputLimit) {
-                        throw new MalformedInputException(input - inputAddress);
+                        throw new MalformedInputException(input - inputOffset);
                     }
 
                     // slow, precise copy
@@ -341,7 +341,7 @@ public final class LzoRawDecompressor
                 lastLiteralLength = literalLength;
             }
         }
-        return (int) (output - outputAddress);
+        return (int) (output - outputOffset);
     }
 
     private static String toBinary(int command)

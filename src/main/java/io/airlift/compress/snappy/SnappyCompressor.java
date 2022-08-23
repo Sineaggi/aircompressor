@@ -41,12 +41,12 @@ public class SnappyCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = ARRAY_BYTE_BASE_OFFSET + inputOffset;
-        long inputLimit = inputAddress + inputLength;
-        long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
-        long outputLimit = outputAddress + maxOutputLength;
+        long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
+        long inputLimit = inputOffset + inputLength;
+        long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
+        long outputLimit = outputOffset + maxOutputLength;
 
-        return SnappyRawCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit, table);
+        return SnappyRawCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputLimit, ArrayUtil.ofArray(output), outputOffset, outputLimit, table);
     }
 
     @Override
@@ -60,15 +60,15 @@ public class SnappyCompressor
         Buffer output = outputBuffer;
 
         ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
-        long inputAddress;
+        long inputOffset;
         long inputLimit;
         if (input.isDirect()) {
             long address = getAddress(input);
-            inputAddress = address + input.position();
+            inputOffset = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
+            inputOffset = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
         else {
@@ -76,15 +76,15 @@ public class SnappyCompressor
         }
 
         ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
-        long outputAddress;
+        long outputOffset;
         long outputLimit;
         if (output.isDirect()) {
             long address = getAddress(output);
-            outputAddress = address + output.position();
+            outputOffset = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
+            outputOffset = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }
         else {
@@ -99,10 +99,10 @@ public class SnappyCompressor
             synchronized (output) {
                 int written = SnappyRawCompressor.compress(
                         inputBase,
-                        inputAddress,
+                        inputOffset,
                         inputLimit,
                         outputBase,
-                        outputAddress,
+                        outputOffset,
                         outputLimit,
                         table);
                 output.position(output.position() + written);

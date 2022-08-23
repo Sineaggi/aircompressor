@@ -35,12 +35,12 @@ public class Lz4Decompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = ARRAY_BYTE_BASE_OFFSET + inputOffset;
-        long inputLimit = inputAddress + inputLength;
-        long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
-        long outputLimit = outputAddress + maxOutputLength;
+        long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
+        long inputLimit = inputOffset + inputLength;
+        long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
+        long outputLimit = outputOffset + maxOutputLength;
 
-        return Lz4RawDecompressor.decompress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit);
+        return Lz4RawDecompressor.decompress(ArrayUtil.ofArray(input), inputOffset, inputLimit, ArrayUtil.ofArray(output), outputOffset, outputLimit);
     }
 
     @Override
@@ -55,15 +55,15 @@ public class Lz4Decompressor
         Buffer output = outputBuffer;
 
         ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
-        long inputAddress;
+        long inputOffset;
         long inputLimit;
         if (input.isDirect()) {
             long address = getAddress(input);
-            inputAddress = address + input.position();
+            inputOffset = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
+            inputOffset = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
         else {
@@ -71,15 +71,15 @@ public class Lz4Decompressor
         }
 
         ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
-        long outputAddress;
+        long outputOffset;
         long outputLimit;
         if (output.isDirect()) {
             long address = getAddress(output);
-            outputAddress = address + output.position();
+            outputOffset = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
+            outputOffset = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }
         else {
@@ -92,7 +92,7 @@ public class Lz4Decompressor
         // collected in a block, and technically, the JVM is allowed to eliminate these locks.
         synchronized (input) {
             synchronized (output) {
-                int written = Lz4RawDecompressor.decompress(inputBase, inputAddress, inputLimit, outputBase, outputAddress, outputLimit);
+                int written = Lz4RawDecompressor.decompress(inputBase, inputOffset, inputLimit, outputBase, outputOffset, outputLimit);
                 output.position(output.position() + written);
             }
         }

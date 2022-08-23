@@ -71,9 +71,9 @@ class SequenceStore
         reset();
     }
 
-    public void appendLiterals(ArrayUtil inputBase, long inputAddress, int inputSize)
+    public void appendLiterals(ArrayUtil inputBase, long inputOffset, int inputSize)
     {
-        inputBase.copyMemory(inputAddress, ArrayUtil.ofArray(literalsBuffer), ARRAY_BYTE_BASE_OFFSET + literalsLength, inputSize);
+        inputBase.copyMemory(inputOffset, ArrayUtil.ofArray(literalsBuffer), ARRAY_BYTE_BASE_OFFSET + literalsLength, inputSize);
         literalsLength += inputSize;
     }
 

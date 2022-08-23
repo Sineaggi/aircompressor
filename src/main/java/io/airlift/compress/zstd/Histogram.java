@@ -22,9 +22,9 @@ class Histogram
     }
 
     // TODO: count parallel heuristic for large inputs
-    private static void count(ArrayUtil inputBase, long inputAddress, int inputSize, int[] counts)
+    private static void count(ArrayUtil inputBase, long inputOffset, int inputSize, int[] counts)
     {
-        long input = inputAddress;
+        long input = inputOffset;
 
         Arrays.fill(counts, 0);
 
