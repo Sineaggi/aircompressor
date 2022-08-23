@@ -18,7 +18,6 @@ import net.jpountz.xxhash.XXHashFactory;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 // forked from https://github.com/airlift/slice
 public class TestXxHash64
@@ -78,6 +77,6 @@ public class TestXxHash64
 
     private static long hash(long seed, byte[] data, int length)
     {
-        return XxHash64.hash(seed, ArrayUtil.ofArray(data), ARRAY_BYTE_BASE_OFFSET, length);
+        return XxHash64.hash(seed, ArrayUtil.ofArray(data), 0, length);
     }
 }
