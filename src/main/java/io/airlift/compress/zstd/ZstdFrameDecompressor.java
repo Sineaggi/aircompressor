@@ -315,7 +315,7 @@ class ZstdFrameDecompressor
         verify(size >= MIN_SEQUENCES_SIZE, input, "Not enough input bytes");
 
         // decode header
-        int sequenceCount = outputBase.getByte(input++) & 0xFF;
+        int sequenceCount = inputBase.getByte(input++) & 0xFF;
         if (sequenceCount != 0) {
             if (sequenceCount == 255) {
                 verify(input + SIZE_OF_SHORT <= inputLimit, input, "Not enough input bytes");
@@ -324,12 +324,12 @@ class ZstdFrameDecompressor
             }
             else if (sequenceCount > 127) {
                 verify(input < inputLimit, input, "Not enough input bytes");
-                sequenceCount = ((sequenceCount - 128) << 8) + (outputBase.getByte(input++) & 0xFF);
+                sequenceCount = ((sequenceCount - 128) << 8) + (inputBase.getByte(input++) & 0xFF);
             }
 
             verify(input + SIZE_OF_INT <= inputLimit, input, "Not enough input bytes");
 
-            byte type = outputBase.getByte(input++);
+            byte type = inputBase.getByte(input++);
 
             int literalsLengthType = (type & 0xFF) >>> 6;
             int offsetCodesType = (type >>> 4) & 0b11;
