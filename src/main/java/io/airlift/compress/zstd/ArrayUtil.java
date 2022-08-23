@@ -10,29 +10,41 @@ public class ArrayUtil {
     private ArrayUtil(Object base, long baseAddress) {
         this.base = base;
         this.baseAddress = baseAddress;
+        // todo: fix this concept
+        this.positionAndLimitSet = false;
+        this.position = 0;
+        this.limit = 0;
+    }
+    private ArrayUtil(Object base, long baseAddress, long position, long limit) {
+        this.base = base;
+        this.baseAddress = baseAddress;
+        this.positionAndLimitSet = true;
+        this.position = position;
+        this.limit = limit;
     }
     private final Object base;
     private final long baseAddress;
+    private final boolean positionAndLimitSet;
+
+    private final long position;
+    private final long limit;
     public static ArrayUtil ofArray(byte[] array) {
         return new ArrayUtil(array, ARRAY_BYTE_BASE_OFFSET);
     }
     public static ArrayUtil ofBuffer(Buffer buffer) {
-        long offset;
-        long limit;
+        // todo: do not pre-calculate position maybe?
         if (buffer.isDirect()) {
-            long address = 0;
-            offset = address + buffer.position();
-            limit = address + buffer.limit();
+            long address = getAddress(buffer);
+            //address = address + buffer.position();
+            return new ArrayUtil(null, address, buffer.position(), buffer.limit());
         }
         else if (buffer.hasArray()) {
-            offset = buffer.arrayOffset() + buffer.position();
-            limit = buffer.arrayOffset() + buffer.limit();
+            long address = ARRAY_BYTE_BASE_OFFSET + buffer.arrayOffset();// + buffer.position();
+            return new ArrayUtil(buffer.array(), address, buffer.position(), buffer.limit());
         }
         else {
-            throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + buffer.getClass().getName());
+            throw new IllegalArgumentException("Unsupported ByteBuffer implementation " + buffer.getClass().getName());
         }
-
-        return new ArrayUtil(null, getAddress(buffer));
     }
 
     public byte getByte(long offset) {
@@ -43,16 +55,20 @@ public class ArrayUtil {
         UNSAFE.putByte(base, baseAddress + offset, value);
     }
 
-    public void putShort(long offset, short value) {
-        UNSAFE.putShort(base, baseAddress + offset, value);
-    }
-
     public short getShort(long offset) {
         return UNSAFE.getShort(base, baseAddress + offset);
     }
 
+    public void putShort(long offset, short value) {
+        UNSAFE.putShort(base, baseAddress + offset, value);
+    }
+
     public int getInt(long offset) {
         return UNSAFE.getInt(base, baseAddress + offset);
+    }
+
+    public void putInt(long offset, int value) {
+        UNSAFE.putInt(base, baseAddress + offset, value);
     }
 
     public long getLong(long offset) {
@@ -63,20 +79,22 @@ public class ArrayUtil {
         UNSAFE.putLong(base, baseAddress + offset, value);
     }
 
-    public void putInt(long offset, int value) {
-        UNSAFE.putInt(base, baseAddress + offset, value);
-    }
-
     public void copyMemory(long srcOffset, ArrayUtil destBase, long destOffset, long bytes) {
         UNSAFE.copyMemory(base, baseAddress + srcOffset, destBase.base, destBase.baseAddress + destOffset, bytes);
     }
 
     public long position() {
-        throw new RuntimeException("none");
+        if (positionAndLimitSet) {
+            return position;
+        }
+        throw new RuntimeException("position not set");
     }
 
     public long limit() {
-        throw new RuntimeException("none");
+        if (positionAndLimitSet) {
+            return limit;
+        }
+        throw new RuntimeException("limit not set");
     }
 
 }

@@ -17,22 +17,19 @@ import io.airlift.compress.Decompressor;
 import io.airlift.compress.MalformedInputException;
 import io.airlift.compress.zstd.ArrayUtil;
 
-import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import static io.airlift.compress.snappy.UnsafeUtil.getAddress;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 public class SnappyDecompressor
         implements Decompressor
 {
     public static int getUncompressedLength(byte[] compressed, int compressedOffset)
     {
-        long compressedAddress = ARRAY_BYTE_BASE_OFFSET + compressedOffset;
-        long compressedLimit = ARRAY_BYTE_BASE_OFFSET + compressed.length;
+        long compressedAddress = compressedOffset;
+        long compressedLimit = compressed.length;
 
         return SnappyRawDecompressor.getUncompressedLength(ArrayUtil.ofArray(compressed), compressedAddress, compressedLimit);
     }
@@ -44,9 +41,9 @@ public class SnappyDecompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
+        //long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
         long inputLimit = inputOffset + inputLength;
-        long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
+        //long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
         long outputLimit = outputOffset + maxOutputLength;
 
         return SnappyRawDecompressor.decompress(ArrayUtil.ofArray(input), inputOffset, inputLimit, ArrayUtil.ofArray(output), outputOffset, outputLimit);
@@ -64,36 +61,12 @@ public class SnappyDecompressor
         Buffer output = outputBuffer;
 
         ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
-        long inputOffset;
-        long inputLimit;
-        if (input.isDirect()) {
-            long address = getAddress(input);
-            inputOffset = address + input.position();
-            inputLimit = address + input.limit();
-        }
-        else if (input.hasArray()) {
-            inputOffset = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
-            inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
-        }
+        long inputOffset = inputBase.position();
+        long inputLimit = inputBase.limit();
 
         ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
-        long outputOffset;
-        long outputLimit;
-        if (output.isDirect()) {
-            long address = getAddress(output);
-            outputOffset = address + output.position();
-            outputLimit = address + output.limit();
-        }
-        else if (output.hasArray()) {
-            outputOffset = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
-            outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported output ByteBuffer implementation " + output.getClass().getName());
-        }
+        long outputOffset = outputBase.position();
+        long outputLimit = outputBase.limit();
 
         // HACK: Assure JVM does not collect Slice wrappers while decompressing, since the
         // collection may trigger freeing of the underlying memory resulting in a segfault

@@ -43,8 +43,8 @@ public class ZstdCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputOffset = 0 + inputOffset;
-        long outputOffset = 0 + outputOffset;
+        //long inputOffset = 0 + inputOffset;
+        //long outputOffset = 0 + outputOffset;
 
         return ZstdFrameCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputOffset + inputLength, ArrayUtil.ofArray(output), outputOffset, outputOffset + maxOutputLength, CompressionParameters.DEFAULT_COMPRESSION_LEVEL);
     }
@@ -59,41 +59,13 @@ public class ZstdCompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        ArrayUtil inputBase;
-        long inputOffset;
-        long inputLimit;
-        if (input.isDirect()) {
-            inputBase = ArrayUtil.ofBuffer(input);
-            long address = 0;
-            inputOffset = address + input.position();
-            inputLimit = address + input.limit();
-        }
-        else if (input.hasArray()) {
-            inputBase = ArrayUtil.ofArray((byte[])input.array());
-            inputOffset = input.arrayOffset() + input.position();
-            inputLimit = input.arrayOffset() + input.limit();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
-        }
+        ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
+        long inputOffset = inputBase.position();
+        long inputLimit = inputBase.limit();
 
-        ArrayUtil outputBase;
-        long outputOffset;
-        long outputLimit;
-        if (output.isDirect()) {
-            outputBase = ArrayUtil.ofBuffer(output);
-            long address = 0;
-            outputOffset = address + output.position();
-            outputLimit = address + output.limit();
-        }
-        else if (output.hasArray()) {
-            outputBase = ArrayUtil.ofArray((byte[])output.array());
-            outputOffset = output.arrayOffset() + output.position();
-            outputLimit = output.arrayOffset() + output.limit();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported output ByteBuffer implementation " + output.getClass().getName());
-        }
+        ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
+        long outputOffset = outputBase.position();
+        long outputLimit = outputBase.limit();
 
         // HACK: Assure JVM does not collect Slice wrappers while compressing, since the
         // collection may trigger freeing of the underlying memory resulting in a segfault

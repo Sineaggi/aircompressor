@@ -61,50 +61,8 @@ public class Lz4Compressor
         long inputLimit = inputBase.limit();
 
         ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
-        long outputOffset = inputBase.position();
-        long outputLimit = inputBase.limit();
-
-        /*
-        ArrayUtil inputBase;
-        long inputOffset;
-        long inputLimit;
-        if (input.isDirect()) {
-            inputBase = ArrayUtil.ofBuffer(input);
-            long address = 0;
-            inputOffset = address + input.position();
-            inputLimit = address + input.limit();
-        }
-        else if (input.hasArray()) {
-            inputBase = ArrayUtil.ofArray((byte[])input.array());
-            inputOffset = input.arrayOffset() + input.position();
-            inputLimit = input.arrayOffset() + input.limit();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
-        }
-
-        inputBase = ArrayUtil.ofBuffer(input);
-        inputOffset = inputBase.position();
-        inputLimit = inputBase.limit();
-
-        ArrayUtil outputBase;
-        long outputOffset;
-        long outputLimit;
-        if (output.isDirect()) {
-            outputBase = ArrayUtil.ofBuffer(output);
-            long address = 0;
-            outputOffset = address + output.position();
-            outputLimit = address + output.limit();
-        }
-        else if (output.hasArray()) {
-            outputBase = ArrayUtil.ofArray((byte[])output.array());
-            outputOffset = 0 + output.arrayOffset() + output.position();
-            outputLimit = 0 + output.arrayOffset() + output.limit();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported output ByteBuffer implementation " + output.getClass().getName());
-        }
-         */
+        long outputOffset = outputBase.position();
+        long outputLimit = outputBase.limit();
 
         // HACK: Assure JVM does not collect Slice wrappers while compressing, since the
         // collection may trigger freeing of the underlying memory resulting in a segfault
