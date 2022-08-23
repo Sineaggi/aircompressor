@@ -19,7 +19,6 @@ import static io.airlift.compress.zstd.Constants.SIZE_OF_LONG;
 import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
 import static io.airlift.compress.zstd.Util.checkArgument;
 import static io.airlift.compress.zstd.Util.verify;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 class FiniteStateEntropy
 {
@@ -37,7 +36,7 @@ class FiniteStateEntropy
     public static int decompress(FiniteStateEntropy.Table table, final ArrayUtil inputBase, final long inputOffset, final long inputLimit, byte[] outputBuffer)
     {
         final ArrayUtil outputBase = ArrayUtil.ofArray(outputBuffer);
-        final long outputOffset = ARRAY_BYTE_BASE_OFFSET;
+        final long outputOffset = 0;
         final long outputLimit = outputOffset + outputBuffer.length;
 
         long input = inputOffset;
@@ -151,10 +150,10 @@ class FiniteStateEntropy
 
     public static int compress(ArrayUtil outputBase, long outputOffset, int outputSize, byte[] input, int inputSize, FseCompressionTable table)
     {
-        return compress(outputBase, outputOffset, outputSize, input, ARRAY_BYTE_BASE_OFFSET, inputSize, table);
+        return compress(outputBase, outputOffset, outputSize, ArrayUtil.ofArray(input), 0, inputSize, table);
     }
 
-    public static int compress(ArrayUtil outputBase, long outputOffset, int outputSize, Object inputBase, long inputOffset, int inputSize, FseCompressionTable table)
+    public static int compress(ArrayUtil outputBase, long outputOffset, int outputSize, ArrayUtil inputBase, long inputOffset, int inputSize, FseCompressionTable table)
     {
         checkArgument(outputSize >= SIZE_OF_LONG, "Output buffer too small");
 
@@ -174,22 +173,22 @@ class FiniteStateEntropy
 
         if ((inputSize & 1) != 0) {
             input--;
-            state1 = table.begin(outputBase.getByte(input));
+            state1 = table.begin(inputBase.getByte(input));
 
             input--;
-            state2 = table.begin(outputBase.getByte(input));
+            state2 = table.begin(inputBase.getByte(input));
 
             input--;
-            state1 = table.encode(stream, state1, outputBase.getByte(input));
+            state1 = table.encode(stream, state1, inputBase.getByte(input));
 
             stream.flush();
         }
         else {
             input--;
-            state2 = table.begin(outputBase.getByte(input));
+            state2 = table.begin(inputBase.getByte(input));
 
             input--;
-            state1 = table.begin(outputBase.getByte(input));
+            state1 = table.begin(inputBase.getByte(input));
         }
 
         // join to mod 4
@@ -197,10 +196,10 @@ class FiniteStateEntropy
 
         if ((SIZE_OF_LONG * 8 > MAX_TABLE_LOG * 4 + 7) && (inputSize & 2) != 0) {  /* test bit 2 */
             input--;
-            state2 = table.encode(stream, state2, outputBase.getByte(input));
+            state2 = table.encode(stream, state2, inputBase.getByte(input));
 
             input--;
-            state1 = table.encode(stream, state1, outputBase.getByte(input));
+            state1 = table.encode(stream, state1, inputBase.getByte(input));
 
             stream.flush();
         }
@@ -208,21 +207,21 @@ class FiniteStateEntropy
         // 2 or 4 encoding per loop
         while (input > start) {
             input--;
-            state2 = table.encode(stream, state2, outputBase.getByte(input));
+            state2 = table.encode(stream, state2, inputBase.getByte(input));
 
             if (SIZE_OF_LONG * 8 < MAX_TABLE_LOG * 2 + 7) {
                 stream.flush();
             }
 
             input--;
-            state1 = table.encode(stream, state1, outputBase.getByte(input));
+            state1 = table.encode(stream, state1, inputBase.getByte(input));
 
             if (SIZE_OF_LONG * 8 > MAX_TABLE_LOG * 4 + 7) {
                 input--;
-                state2 = table.encode(stream, state2, outputBase.getByte(input));
+                state2 = table.encode(stream, state2, inputBase.getByte(input));
 
                 input--;
-                state1 = table.encode(stream, state1, outputBase.getByte(input));
+                state1 = table.encode(stream, state1, inputBase.getByte(input));
             }
 
             stream.flush();
