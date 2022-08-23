@@ -3,10 +3,6 @@ plugins {
     id("me.champeau.mrjar") version "0.1"
 }
 
-java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(19))
-}
-
 multiRelease {
     targetVersions(8, 19)
 }
