@@ -28,7 +28,6 @@ import static io.airlift.compress.zstd.Constants.SEQUENCE_ENCODING_COMPRESSED;
 import static io.airlift.compress.zstd.Constants.SEQUENCE_ENCODING_RLE;
 import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
 import static io.airlift.compress.zstd.FiniteStateEntropy.optimalTableLog;
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 import static io.airlift.compress.zstd.Util.checkArgument;
 
 class SequenceEncoder
@@ -63,7 +62,7 @@ class SequenceEncoder
     {
     }
 
-    public static int compressSequences(Object outputBase, final long outputAddress, int outputSize, SequenceStore sequences, CompressionParameters.Strategy strategy, SequenceEncodingContext workspace)
+    public static int compressSequences(ArrayUtil outputBase, final long outputAddress, int outputSize, SequenceStore sequences, CompressionParameters.Strategy strategy, SequenceEncodingContext workspace)
     {
         long output = outputAddress;
         long outputLimit = outputAddress + outputSize;
@@ -217,7 +216,7 @@ class SequenceEncoder
         return (int) (output - outputAddress);
     }
 
-    private static int buildCompressionTable(FseCompressionTable table, Object outputBase, long output, long outputLimit, int sequenceCount, int maxTableLog, byte[] codes, int[] counts, int maxSymbol, short[] normalizedCounts)
+    private static int buildCompressionTable(FseCompressionTable table, ArrayUtil outputBase, long output, long outputLimit, int sequenceCount, int maxTableLog, byte[] codes, int[] counts, int maxSymbol, short[] normalizedCounts)
     {
         int tableLog = optimalTableLog(maxTableLog, sequenceCount, maxSymbol);
 
@@ -235,7 +234,7 @@ class SequenceEncoder
     }
 
     private static int encodeSequences(
-            Object outputBase,
+            ArrayUtil outputBase,
             long output,
             long outputLimit,
             FseCompressionTable matchLengthTable,

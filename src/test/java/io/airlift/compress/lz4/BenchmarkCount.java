@@ -13,6 +13,7 @@
  */
 package io.airlift.compress.lz4;
 
+import io.airlift.compress.zstd.ArrayUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -71,7 +72,7 @@ public class BenchmarkCount
     @Benchmark
     public long count()
     {
-        return Lz4RawCompressor.count(data, ARRAY_BYTE_BASE_OFFSET + matchLength + 1, ARRAY_BYTE_BASE_OFFSET + data.length, ARRAY_BYTE_BASE_OFFSET);
+        return Lz4RawCompressor.count(ArrayUtil.ofArray(data), ARRAY_BYTE_BASE_OFFSET + matchLength + 1, ARRAY_BYTE_BASE_OFFSET + data.length, ARRAY_BYTE_BASE_OFFSET);
     }
 
     public static void main(String[] args)

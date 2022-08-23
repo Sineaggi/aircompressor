@@ -15,7 +15,6 @@ package io.airlift.compress.zstd;
 
 import static io.airlift.compress.zstd.Constants.SIZE_OF_INT;
 import static io.airlift.compress.zstd.Constants.SIZE_OF_LONG;
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 
 class DoubleFastBlockCompressor
         implements BlockCompressor
@@ -24,7 +23,7 @@ class DoubleFastBlockCompressor
     private static final int SEARCH_STRENGTH = 8;
     private static final int REP_MOVE = Constants.REPEATED_OFFSET_COUNT - 1;
 
-    public int compressBlock(Object inputBase, final long inputAddress, int inputSize, SequenceStore output, BlockCompressionState state, RepeatedOffsets offsets, CompressionParameters parameters)
+    public int compressBlock(ArrayUtil inputBase, final long inputAddress, int inputSize, SequenceStore output, BlockCompressionState state, RepeatedOffsets offsets, CompressionParameters parameters)
     {
         int matchSearchLength = Math.max(parameters.getSearchLength(), 4);
 
@@ -183,7 +182,7 @@ class DoubleFastBlockCompressor
     /**
      * matchAddress must be < inputAddress
      */
-    public static int count(Object inputBase, final long inputAddress, final long inputLimit, final long matchAddress)
+    public static int count(ArrayUtil inputBase, final long inputAddress, final long inputLimit, final long matchAddress)
     {
         long input = inputAddress;
         long match = matchAddress;
@@ -212,7 +211,7 @@ class DoubleFastBlockCompressor
         return count;
     }
 
-    private static int hash(Object inputBase, long inputAddress, int bits, int matchSearchLength)
+    private static int hash(ArrayUtil inputBase, long inputAddress, int bits, int matchSearchLength)
     {
         switch (matchSearchLength) {
             case 8:

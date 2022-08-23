@@ -16,14 +16,11 @@ package io.airlift.compress.zstd;
 import io.airlift.compress.Decompressor;
 import io.airlift.compress.MalformedInputException;
 
-import java.lang.foreign.MemorySegment;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import static io.airlift.compress.zstd.UnsafeUtil.getAddress;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 public class ZstdDecompressor
         implements Decompressor
@@ -38,12 +35,12 @@ public class ZstdDecompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = ARRAY_BYTE_BASE_OFFSET + inputOffset;
+        long inputAddress = inputOffset;
         long inputLimit = inputAddress + inputLength;
-        long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
+        long outputAddress = outputOffset;
         long outputLimit = outputAddress + maxOutputLength;
 
-        return decompressor.decompress(ArrayUtil.of(input), inputAddress, inputLimit, ArrayUtil.of(output), outputAddress, outputLimit);
+        return decompressor.decompress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit);
     }
 
     @Override
@@ -61,31 +58,33 @@ public class ZstdDecompressor
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = ArrayUtil.of(input);
-            long address = getAddress(input);
+            inputBase = ArrayUtil.ofBuffer(input);
+            long address = 0;
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = ArrayUtil.of((byte[])input.array());
-            inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
-            inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
+            inputBase = ArrayUtil.ofArray((byte[])input.array());
+            inputAddress = input.arrayOffset() + input.position();
+            inputLimit = input.arrayOffset() + input.limit();
         }
         else {
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        ArrayUtil outputBase = ArrayUtil.of(output);
+        ArrayUtil outputBase;
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            long address = getAddress(output);
+            outputBase = ArrayUtil.ofBuffer(output);
+            long address = 0;
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
-            outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
+            outputBase = ArrayUtil.ofArray((byte[])output.array());
+            outputAddress = output.arrayOffset() + output.position();
+            outputLimit = output.arrayOffset() + output.limit();
         }
         else {
             throw new IllegalArgumentException("Unsupported output ByteBuffer implementation " + output.getClass().getName());
@@ -105,8 +104,8 @@ public class ZstdDecompressor
 
     public static long getDecompressedSize(byte[] input, int offset, int length)
     {
-        int baseAddress = ARRAY_BYTE_BASE_OFFSET + offset;
-        return ZstdFrameDecompressor.getDecompressedSize(ArrayUtil.of(input), baseAddress, baseAddress + length);
+        int baseAddress = offset;
+        return ZstdFrameDecompressor.getDecompressedSize(ArrayUtil.ofArray(input), baseAddress, baseAddress + length);
     }
 
     private static void verifyRange(byte[] data, int offset, int length)

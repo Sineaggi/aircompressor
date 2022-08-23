@@ -15,7 +15,6 @@ package io.airlift.compress.zstd;
 
 import static io.airlift.compress.zstd.FiniteStateEntropy.MAX_SYMBOL;
 import static io.airlift.compress.zstd.FiniteStateEntropy.MIN_TABLE_LOG;
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 import static io.airlift.compress.zstd.Util.highestBit;
 import static io.airlift.compress.zstd.Util.verify;
 
@@ -24,7 +23,7 @@ class FseTableReader
     private final short[] nextSymbol = new short[MAX_SYMBOL + 1];
     private final short[] normalizedCounters = new short[MAX_SYMBOL + 1];
 
-    public int readFseTable(FiniteStateEntropy.Table table, Object inputBase, long inputAddress, long inputLimit, int maxSymbol, int maxTableLog)
+    public int readFseTable(FiniteStateEntropy.Table table, ArrayUtil inputBase, long inputAddress, long inputLimit, int maxSymbol, int maxTableLog)
     {
         // read table headers
         long input = inputAddress;

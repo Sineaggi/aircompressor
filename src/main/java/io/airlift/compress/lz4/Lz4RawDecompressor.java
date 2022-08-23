@@ -14,13 +14,13 @@
 package io.airlift.compress.lz4;
 
 import io.airlift.compress.MalformedInputException;
+import io.airlift.compress.zstd.ArrayUtil;
 
 import static io.airlift.compress.lz4.Lz4Constants.LAST_LITERAL_SIZE;
 import static io.airlift.compress.lz4.Lz4Constants.MIN_MATCH;
 import static io.airlift.compress.lz4.Lz4Constants.SIZE_OF_INT;
 import static io.airlift.compress.lz4.Lz4Constants.SIZE_OF_LONG;
 import static io.airlift.compress.lz4.Lz4Constants.SIZE_OF_SHORT;
-import static io.airlift.compress.lz4.UnsafeUtil.UNSAFE;
 
 public final class Lz4RawDecompressor
 {
@@ -33,10 +33,10 @@ public final class Lz4RawDecompressor
     private Lz4RawDecompressor() {}
 
     public static int decompress(
-            final Object inputBase,
+            final ArrayUtil inputBase,
             final long inputAddress,
             final long inputLimit,
-            final Object outputBase,
+            final ArrayUtil outputBase,
             final long outputAddress,
             final long outputLimit)
     {
@@ -84,7 +84,7 @@ public final class Lz4RawDecompressor
                 }
 
                 // slow, precise copy
-                UNSAFE.copyMemory(inputBase, input, outputBase, output, literalLength);
+                inputBase.copyMemory(input, outputBase, output, literalLength);
                 output += literalLength;
                 break;
             }
@@ -92,7 +92,7 @@ public final class Lz4RawDecompressor
             // fast copy. We may overcopy but there's enough room in input and output to not overrun them
             int index = 0;
             do {
-                UNSAFE.putLong(outputBase, output, inputBase.getLong(input));
+                outputBase.putLong(output, inputBase.getLong(input));
                 output += SIZE_OF_LONG;
                 input += SIZE_OF_LONG;
                 index += SIZE_OF_LONG;
@@ -139,19 +139,19 @@ public final class Lz4RawDecompressor
                 int increment32 = DEC_32_TABLE[offset];
                 int decrement64 = DEC_64_TABLE[offset];
 
-                UNSAFE.putByte(outputBase, output, outputBase.getByte(matchAddress));
-                UNSAFE.putByte(outputBase, output + 1, outputBase.getByte(matchAddress + 1));
-                UNSAFE.putByte(outputBase, output + 2, outputBase.getByte(matchAddress + 2));
-                UNSAFE.putByte(outputBase, output + 3, outputBase.getByte(matchAddress + 3));
+                outputBase.putByte(output, outputBase.getByte(matchAddress));
+                outputBase.putByte(output + 1, outputBase.getByte(matchAddress + 1));
+                outputBase.putByte(output + 2, outputBase.getByte(matchAddress + 2));
+                outputBase.putByte(output + 3, outputBase.getByte(matchAddress + 3));
                 output += SIZE_OF_INT;
                 matchAddress += increment32;
 
-                UNSAFE.putInt(outputBase, output, outputBase.getInt(matchAddress));
+                outputBase.putInt(output, outputBase.getInt(matchAddress));
                 output += SIZE_OF_INT;
                 matchAddress -= decrement64;
             }
             else {
-                UNSAFE.putLong(outputBase, output, outputBase.getLong(matchAddress));
+                outputBase.putLong(output, outputBase.getLong(matchAddress));
                 matchAddress += SIZE_OF_LONG;
                 output += SIZE_OF_LONG;
             }
@@ -162,19 +162,19 @@ public final class Lz4RawDecompressor
                 }
 
                 while (output < fastOutputLimit) {
-                    UNSAFE.putLong(outputBase, output, outputBase.getLong(matchAddress));
+                    outputBase.putLong(output, outputBase.getLong(matchAddress));
                     matchAddress += SIZE_OF_LONG;
                     output += SIZE_OF_LONG;
                 }
 
                 while (output < matchOutputLimit) {
-                    UNSAFE.putByte(outputBase, output++, outputBase.getByte(matchAddress++));
+                    outputBase.putByte(output++, outputBase.getByte(matchAddress++));
                 }
             }
             else {
                 int i = 0;
                 do {
-                    UNSAFE.putLong(outputBase, output, outputBase.getLong(matchAddress));
+                    outputBase.putLong(output, outputBase.getLong(matchAddress));
                     output += SIZE_OF_LONG;
                     matchAddress += SIZE_OF_LONG;
                     i += SIZE_OF_LONG;

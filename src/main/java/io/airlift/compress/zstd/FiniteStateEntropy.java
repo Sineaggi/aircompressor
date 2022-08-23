@@ -36,7 +36,7 @@ class FiniteStateEntropy
 
     public static int decompress(FiniteStateEntropy.Table table, final ArrayUtil inputBase, final long inputAddress, final long inputLimit, byte[] outputBuffer)
     {
-        final ArrayUtil outputBase = ArrayUtil.of(outputBuffer);
+        final ArrayUtil outputBase = ArrayUtil.ofArray(outputBuffer);
         final long outputAddress = ARRAY_BYTE_BASE_OFFSET;
         final long outputLimit = outputAddress + outputBuffer.length;
 

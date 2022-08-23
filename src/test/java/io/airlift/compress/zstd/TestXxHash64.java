@@ -78,6 +78,6 @@ public class TestXxHash64
 
     private static long hash(long seed, byte[] data, int length)
     {
-        return XxHash64.hash(seed, data, ARRAY_BYTE_BASE_OFFSET, length);
+        return XxHash64.hash(seed, ArrayUtil.ofArray(data), ARRAY_BYTE_BASE_OFFSET, length);
     }
 }

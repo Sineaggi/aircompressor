@@ -4,6 +4,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.Buffer;
 
+/*
 public class ArrayUtil {
     private ArrayUtil(MemorySegment array) {
         this.arraySegment = array;
@@ -22,3 +23,4 @@ public class ArrayUtil {
         arraySegment.set(ValueLayout.JAVA_BYTE, output, value);
     }
 }
+ */

@@ -16,7 +16,6 @@ package io.airlift.compress.zstd;
 import io.airlift.compress.MalformedInputException;
 
 import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 
 final class Util
 {
@@ -74,7 +73,7 @@ final class Util
         return cycleLog;
     }
 
-    public static void put24BitLittleEndian(Object outputBase, long outputAddress, int value)
+    public static void put24BitLittleEndian(ArrayUtil outputBase, long outputAddress, int value)
     {
         outputBase.putShort(outputAddress, (short) value);
         outputBase.putByte(outputAddress + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));

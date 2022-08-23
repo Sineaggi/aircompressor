@@ -24,7 +24,7 @@ import static java.lang.String.format;
 
 final class UnsafeUtil
 {
-    public static final Unsafe UNSAFE;
+    private static final Unsafe UNSAFE;
     private static final long ADDRESS_OFFSET;
 
     private UnsafeUtil() {}
@@ -59,6 +59,6 @@ final class UnsafeUtil
             throw new IllegalArgumentException("buffer is not direct");
         }
 
-        return buffer.getLong(ADDRESS_OFFSET);
+        return UNSAFE.getLong(buffer, ADDRESS_OFFSET);
     }
 }

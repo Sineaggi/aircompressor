@@ -20,7 +20,6 @@ import static io.airlift.compress.zstd.Huffman.MAX_SYMBOL;
 import static io.airlift.compress.zstd.Huffman.MAX_SYMBOL_COUNT;
 import static io.airlift.compress.zstd.Huffman.MAX_TABLE_LOG;
 import static io.airlift.compress.zstd.Huffman.MIN_TABLE_LOG;
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 import static io.airlift.compress.zstd.Util.checkArgument;
 import static io.airlift.compress.zstd.Util.minTableLog;
 
@@ -199,7 +198,7 @@ final class HuffmanCompressionTable
         output.addBitsFast(values[symbol], numberOfBits[symbol]);
     }
 
-    public int write(Object outputBase, long outputAddress, int outputSize, HuffmanTableWriterWorkspace workspace)
+    public int write(ArrayUtil outputBase, long outputAddress, int outputSize, HuffmanTableWriterWorkspace workspace)
     {
         byte[] weights = workspace.weights;
 
@@ -392,7 +391,7 @@ final class HuffmanCompressionTable
     /**
      * All elements within weightTable must be <= Huffman.MAX_TABLE_LOG
      */
-    private static int compressWeights(Object outputBase, long outputAddress, int outputSize, byte[] weights, int weightsLength, HuffmanTableWriterWorkspace workspace)
+    private static int compressWeights(ArrayUtil outputBase, long outputAddress, int outputSize, byte[] weights, int weightsLength, HuffmanTableWriterWorkspace workspace)
     {
         if (weightsLength <= 1) {
             return 0; // Not compressible

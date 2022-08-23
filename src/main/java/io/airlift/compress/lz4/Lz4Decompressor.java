@@ -15,6 +15,7 @@ package io.airlift.compress.lz4;
 
 import io.airlift.compress.Decompressor;
 import io.airlift.compress.MalformedInputException;
+import io.airlift.compress.zstd.ArrayUtil;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -39,7 +40,7 @@ public class Lz4Decompressor
         long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
         long outputLimit = outputAddress + maxOutputLength;
 
-        return Lz4RawDecompressor.decompress(input, inputAddress, inputLimit, output, outputAddress, outputLimit);
+        return Lz4RawDecompressor.decompress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit);
     }
 
     @Override
@@ -53,17 +54,15 @@ public class Lz4Decompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        Object inputBase;
+        ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = null;
             long address = getAddress(input);
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = input.array();
             inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
@@ -71,17 +70,15 @@ public class Lz4Decompressor
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        Object outputBase;
+        ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            outputBase = null;
             long address = getAddress(output);
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputBase = output.array();
             outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }

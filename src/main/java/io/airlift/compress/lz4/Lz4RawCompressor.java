@@ -13,13 +13,14 @@
  */
 package io.airlift.compress.lz4;
 
+import io.airlift.compress.zstd.ArrayUtil;
+
 import java.util.Arrays;
 
 import static io.airlift.compress.lz4.Lz4Constants.LAST_LITERAL_SIZE;
 import static io.airlift.compress.lz4.Lz4Constants.MIN_MATCH;
 import static io.airlift.compress.lz4.Lz4Constants.SIZE_OF_LONG;
 import static io.airlift.compress.lz4.Lz4Constants.SIZE_OF_SHORT;
-import static io.airlift.compress.lz4.UnsafeUtil.UNSAFE;
 
 public final class Lz4RawCompressor
 {
@@ -66,10 +67,10 @@ public final class Lz4RawCompressor
     }
 
     public static int compress(
-            final Object inputBase,
+            final ArrayUtil inputBase,
             final long inputAddress,
             final int inputLength,
-            final Object outputBase,
+            final ArrayUtil outputBase,
             final long outputAddress,
             final long maxOutputLength,
             final int[] table)
@@ -179,7 +180,7 @@ public final class Lz4RawCompressor
 
                 // go for another match
                 tokenAddress = output++;
-                UNSAFE.putByte(outputBase, tokenAddress, (byte) 0);
+                outputBase.putByte(tokenAddress, (byte) 0);
             }
         }
         while (!done);
@@ -190,13 +191,13 @@ public final class Lz4RawCompressor
         return (int) (output - outputAddress);
     }
 
-    private static long emitLiteral(Object inputBase, Object outputBase, long input, int literalLength, long output)
+    private static long emitLiteral(ArrayUtil inputBase, ArrayUtil outputBase, long input, int literalLength, long output)
     {
         output = encodeRunLength(outputBase, output, literalLength);
 
         final long outputLimit = output + literalLength;
         do {
-            UNSAFE.putLong(outputBase, output, inputBase.getLong(input));
+            outputBase.putLong(output, inputBase.getLong(input));
             input += SIZE_OF_LONG;
             output += SIZE_OF_LONG;
         }
@@ -205,29 +206,29 @@ public final class Lz4RawCompressor
         return outputLimit;
     }
 
-    private static long emitMatch(Object outputBase, long output, long tokenAddress, short offset, long matchLength)
+    private static long emitMatch(ArrayUtil outputBase, long output, long tokenAddress, short offset, long matchLength)
     {
         // write offset
-        UNSAFE.putShort(outputBase, output, offset);
+        outputBase.putShort(output, offset);
         output += SIZE_OF_SHORT;
 
         // write match length
         if (matchLength >= ML_MASK) {
-            UNSAFE.putByte(outputBase, tokenAddress, (byte) (outputBase.getByte(tokenAddress) | ML_MASK));
+            outputBase.putByte(tokenAddress, (byte) (outputBase.getByte(tokenAddress) | ML_MASK));
             long remaining = matchLength - ML_MASK;
             while (remaining >= 510) {
-                UNSAFE.putShort(outputBase, output, (short) 0xFFFF);
+                outputBase.putShort(output, (short) 0xFFFF);
                 output += SIZE_OF_SHORT;
                 remaining -= 510;
             }
             if (remaining >= 255) {
-                UNSAFE.putByte(outputBase, output++, (byte) 255);
+                outputBase.putByte(output++, (byte) 255);
                 remaining -= 255;
             }
-            UNSAFE.putByte(outputBase, output++, (byte) remaining);
+            outputBase.putByte(output++, (byte) remaining);
         }
         else {
-            UNSAFE.putByte(outputBase, tokenAddress, (byte) (outputBase.getByte(tokenAddress) | matchLength));
+            outputBase.putByte(tokenAddress, (byte) (outputBase.getByte(tokenAddress) | matchLength));
         }
 
         return output;
@@ -236,7 +237,7 @@ public final class Lz4RawCompressor
     /**
      * matchAddress must be < inputAddress
      */
-    static int count(Object inputBase, final long inputAddress, final long inputLimit, final long matchAddress)
+    static int count(ArrayUtil inputBase, final long inputAddress, final long inputLimit, final long matchAddress)
     {
         long input = inputAddress;
         long match = matchAddress;
@@ -266,35 +267,35 @@ public final class Lz4RawCompressor
     }
 
     private static long emitLastLiteral(
-            final Object outputBase,
+            final ArrayUtil outputBase,
             final long outputAddress,
-            final Object inputBase,
+            final ArrayUtil inputBase,
             final long inputAddress,
             final long length)
     {
         long output = encodeRunLength(outputBase, outputAddress, length);
-        UNSAFE.copyMemory(inputBase, inputAddress, outputBase, output, length);
+        inputBase.copyMemory(inputAddress, outputBase, output, length);
 
         return output + length;
     }
 
     private static long encodeRunLength(
-            final Object base,
+            final ArrayUtil base,
             long output,
             final long length)
     {
         if (length >= RUN_MASK) {
-            UNSAFE.putByte(base, output++, (byte) (RUN_MASK << ML_BITS));
+            base.putByte(output++, (byte) (RUN_MASK << ML_BITS));
 
             long remaining = length - RUN_MASK;
             while (remaining >= 255) {
-                UNSAFE.putByte(base, output++, (byte) 255);
+                base.putByte(output++, (byte) 255);
                 remaining -= 255;
             }
-            UNSAFE.putByte(base, output++, (byte) remaining);
+            base.putByte(output++, (byte) remaining);
         }
         else {
-            UNSAFE.putByte(base, output++, (byte) (length << ML_BITS));
+            base.putByte(output++, (byte) (length << ML_BITS));
         }
 
         return output;

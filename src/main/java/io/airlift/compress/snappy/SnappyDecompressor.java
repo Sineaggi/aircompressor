@@ -15,7 +15,9 @@ package io.airlift.compress.snappy;
 
 import io.airlift.compress.Decompressor;
 import io.airlift.compress.MalformedInputException;
+import io.airlift.compress.zstd.ArrayUtil;
 
+import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
@@ -32,7 +34,7 @@ public class SnappyDecompressor
         long compressedAddress = ARRAY_BYTE_BASE_OFFSET + compressedOffset;
         long compressedLimit = ARRAY_BYTE_BASE_OFFSET + compressed.length;
 
-        return SnappyRawDecompressor.getUncompressedLength(compressed, compressedAddress, compressedLimit);
+        return SnappyRawDecompressor.getUncompressedLength(ArrayUtil.ofArray(compressed), compressedAddress, compressedLimit);
     }
 
     @Override
@@ -47,7 +49,7 @@ public class SnappyDecompressor
         long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
         long outputLimit = outputAddress + maxOutputLength;
 
-        return SnappyRawDecompressor.decompress(input, inputAddress, inputLimit, output, outputAddress, outputLimit);
+        return SnappyRawDecompressor.decompress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit);
     }
 
     @Override
@@ -61,17 +63,15 @@ public class SnappyDecompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        Object inputBase;
+        ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = null;
             long address = getAddress(input);
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = input.array();
             inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
@@ -79,17 +79,15 @@ public class SnappyDecompressor
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        Object outputBase;
+        ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            outputBase = null;
             long address = getAddress(output);
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputBase = output.array();
             outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }

@@ -51,7 +51,6 @@ import static io.airlift.compress.zstd.Constants.TREELESS_LITERALS_BLOCK;
 import static io.airlift.compress.zstd.Util.fail;
 import static io.airlift.compress.zstd.Util.mask;
 import static io.airlift.compress.zstd.Util.verify;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 class ZstdFrameDecompressor
 {
@@ -217,11 +216,11 @@ class ZstdFrameDecompressor
         currentMatchLengthTable = null;
     }
 
-    private static int decodeRawBlock(Object inputBase, long inputAddress, int blockSize, Object outputBase, long outputAddress, long outputLimit)
+    private static int decodeRawBlock(ArrayUtil inputBase, long inputAddress, int blockSize, ArrayUtil outputBase, long outputAddress, long outputLimit)
     {
         verify(outputAddress + blockSize <= outputLimit, inputAddress, "Output buffer too small");
 
-        UNSAFE.copyMemory(inputBase, inputAddress, outputBase, outputAddress, blockSize);
+        inputBase.copyMemory(inputAddress, outputBase, outputAddress, blockSize);
         return blockSize;
     }
 
@@ -504,10 +503,10 @@ class ZstdFrameDecompressor
         return (int) (output - outputAddress);
     }
 
-    private long copyLastLiteral(Object outputBase, Object literalsBase, long literalsLimit, long output, long literalsInput)
+    private long copyLastLiteral(ArrayUtil outputBase, ArrayUtil literalsBase, long literalsLimit, long output, long literalsInput)
     {
         long lastLiteralsSize = literalsLimit - literalsInput;
-        UNSAFE.copyMemory(literalsBase, literalsInput, outputBase, output, lastLiteralsSize);
+        literalsBase.copyMemory(literalsInput, outputBase, output, lastLiteralsSize);
         output += lastLiteralsSize;
         return output;
     }
@@ -755,9 +754,9 @@ class ZstdFrameDecompressor
             input += huffman.readTable(inputBase, input, compressedSize);
         }
 
-        literalsBase = ArrayUtil.of(literals);
-        literalsAddress = ARRAY_BYTE_BASE_OFFSET;
-        literalsLimit = ARRAY_BYTE_BASE_OFFSET + uncompressedSize;
+        literalsBase = ArrayUtil.ofArray(literals);
+        literalsAddress = 0;
+        literalsLimit = 0 + uncompressedSize;
 
         if (singleStream) {
             huffman.decodeSingleStream(inputBase, input, inputLimit, literalsBase, literalsAddress, literalsLimit);
@@ -800,9 +799,9 @@ class ZstdFrameDecompressor
         byte value = inputBase.getByte(input++);
         Arrays.fill(literals, 0, outputSize + SIZE_OF_LONG, value);
 
-        literalsBase = literals;
-        literalsAddress = ARRAY_BYTE_BASE_OFFSET;
-        literalsLimit = ARRAY_BYTE_BASE_OFFSET + outputSize;
+        literalsBase = ArrayUtil.ofArray(literals);
+        literalsAddress = 0;
+        literalsLimit = 0 + outputSize;
 
         return (int) (input - inputAddress);
     }
@@ -840,12 +839,11 @@ class ZstdFrameDecompressor
         // Set literals pointer to [input, literalSize], but only if we can copy 8 bytes at a time during sequence decoding
         // Otherwise, copy literals into buffer that's big enough to guarantee that
         if (literalSize > (inputLimit - input) - SIZE_OF_LONG) {
-            literalsBase = ArrayUtil.of(literals);
-            literalsAddress = ARRAY_BYTE_BASE_OFFSET;
-            literalsLimit = ARRAY_BYTE_BASE_OFFSET + literalSize;
+            literalsBase = ArrayUtil.ofArray(literals);
+            literalsAddress = 0;
+            literalsLimit = 0 + literalSize;
 
-            //UNSAFE.copyMemory(inputBase, input, literals, literalsAddress, literalSize);
-            inputBase.copyMemory(input, literals, literalsAddress, literalSize);
+            inputBase.copyMemory(input, literalsBase, literalsAddress, literalSize);
             Arrays.fill(literals, literalSize, literalSize + SIZE_OF_LONG, (byte) 0);
         }
         else {

@@ -14,6 +14,7 @@
 package io.airlift.compress.lzo;
 
 import io.airlift.compress.Compressor;
+import io.airlift.compress.zstd.ArrayUtil;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -47,7 +48,7 @@ public class LzoCompressor
         long inputAddress = ARRAY_BYTE_BASE_OFFSET + inputOffset;
         long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
 
-        return LzoRawCompressor.compress(input, inputAddress, inputLength, output, outputAddress, maxOutputLength, table);
+        return LzoRawCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputLength, ArrayUtil.ofArray(output), outputAddress, maxOutputLength, table);
     }
 
     @Override
@@ -60,17 +61,15 @@ public class LzoCompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        Object inputBase;
+        ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = null;
             long address = getAddress(input);
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = input.array();
             inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
@@ -78,17 +77,15 @@ public class LzoCompressor
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        Object outputBase;
+        ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            outputBase = null;
             long address = getAddress(output);
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputBase = output.array();
             outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }

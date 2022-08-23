@@ -15,9 +15,6 @@ package io.airlift.compress.zstd;
 
 import java.util.Arrays;
 
-import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
-
 class Histogram
 {
     private Histogram()
@@ -25,7 +22,7 @@ class Histogram
     }
 
     // TODO: count parallel heuristic for large inputs
-    private static void count(Object inputBase, long inputAddress, int inputSize, int[] counts)
+    private static void count(ArrayUtil inputBase, long inputAddress, int inputSize, int[] counts)
     {
         long input = inputAddress;
 
@@ -60,6 +57,6 @@ class Histogram
 
     public static void count(byte[] input, int length, int[] counts)
     {
-        count(input, ARRAY_BYTE_BASE_OFFSET, length, counts);
+        count(ArrayUtil.ofArray(input), 0, length, counts);
     }
 }

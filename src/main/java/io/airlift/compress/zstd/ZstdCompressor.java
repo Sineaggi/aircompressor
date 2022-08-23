@@ -19,10 +19,8 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 import static io.airlift.compress.zstd.Constants.MAX_BLOCK_SIZE;
-import static io.airlift.compress.zstd.UnsafeUtil.getAddress;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 public class ZstdCompressor
         implements Compressor
@@ -45,10 +43,10 @@ public class ZstdCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        long inputAddress = ARRAY_BYTE_BASE_OFFSET + inputOffset;
-        long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
+        long inputAddress = 0 + inputOffset;
+        long outputAddress = 0 + outputOffset;
 
-        return ZstdFrameCompressor.compress(input, inputAddress, inputAddress + inputLength, output, outputAddress, outputAddress + maxOutputLength, CompressionParameters.DEFAULT_COMPRESSION_LEVEL);
+        return ZstdFrameCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputAddress + inputLength, ArrayUtil.ofArray(output), outputAddress, outputAddress + maxOutputLength, CompressionParameters.DEFAULT_COMPRESSION_LEVEL);
     }
 
     @Override
@@ -61,37 +59,37 @@ public class ZstdCompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        Object inputBase;
+        ArrayUtil inputBase;
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = null;
-            long address = getAddress(input);
+            inputBase = ArrayUtil.ofBuffer(input);
+            long address = 0;
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = input.array();
-            inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
-            inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
+            inputBase = ArrayUtil.ofArray((byte[])input.array());
+            inputAddress = input.arrayOffset() + input.position();
+            inputLimit = input.arrayOffset() + input.limit();
         }
         else {
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        Object outputBase;
+        ArrayUtil outputBase;
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            outputBase = null;
-            long address = getAddress(output);
+            outputBase = ArrayUtil.ofBuffer(output);
+            long address = 0;
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputBase = output.array();
-            outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
-            outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
+            outputBase = ArrayUtil.ofArray((byte[])output.array());
+            outputAddress = output.arrayOffset() + output.position();
+            outputLimit = output.arrayOffset() + output.limit();
         }
         else {
             throw new IllegalArgumentException("Unsupported output ByteBuffer implementation " + output.getClass().getName());

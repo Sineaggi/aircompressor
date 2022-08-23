@@ -14,6 +14,7 @@
 package io.airlift.compress.snappy;
 
 import io.airlift.compress.Compressor;
+import io.airlift.compress.zstd.ArrayUtil;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -45,7 +46,7 @@ public class SnappyCompressor
         long outputAddress = ARRAY_BYTE_BASE_OFFSET + outputOffset;
         long outputLimit = outputAddress + maxOutputLength;
 
-        return SnappyRawCompressor.compress(input, inputAddress, inputLimit, output, outputAddress, outputLimit, table);
+        return SnappyRawCompressor.compress(ArrayUtil.ofArray(input), inputAddress, inputLimit, ArrayUtil.ofArray(output), outputAddress, outputLimit, table);
     }
 
     @Override
@@ -58,17 +59,15 @@ public class SnappyCompressor
         Buffer input = inputBuffer;
         Buffer output = outputBuffer;
 
-        Object inputBase;
+        ArrayUtil inputBase = ArrayUtil.ofBuffer(input);
         long inputAddress;
         long inputLimit;
         if (input.isDirect()) {
-            inputBase = null;
             long address = getAddress(input);
             inputAddress = address + input.position();
             inputLimit = address + input.limit();
         }
         else if (input.hasArray()) {
-            inputBase = input.array();
             inputAddress = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.position();
             inputLimit = ARRAY_BYTE_BASE_OFFSET + input.arrayOffset() + input.limit();
         }
@@ -76,17 +75,15 @@ public class SnappyCompressor
             throw new IllegalArgumentException("Unsupported input ByteBuffer implementation " + input.getClass().getName());
         }
 
-        Object outputBase;
+        ArrayUtil outputBase = ArrayUtil.ofBuffer(output);
         long outputAddress;
         long outputLimit;
         if (output.isDirect()) {
-            outputBase = null;
             long address = getAddress(output);
             outputAddress = address + output.position();
             outputLimit = address + output.limit();
         }
         else if (output.hasArray()) {
-            outputBase = output.array();
             outputAddress = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.position();
             outputLimit = ARRAY_BYTE_BASE_OFFSET + output.arrayOffset() + output.limit();
         }
