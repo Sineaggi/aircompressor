@@ -31,13 +31,15 @@ public class ArrayUtil {
         return new ArrayUtil(MemorySegment.ofArray(array));
     }
     public static ArrayUtil ofBuffer(Buffer buffer) {
-
-        // todo: do not pre-calculate position maybe?
         if (buffer.isDirect()) {
-            return new ArrayUtil(MemorySegment.ofBuffer(buffer), buffer.position(), buffer.limit());
+            long position = buffer.position();
+            buffer.position(0);
+            return new ArrayUtil(MemorySegment.ofBuffer(buffer), position, buffer.limit());
         }
         else if (buffer.hasArray()) {
-            return new ArrayUtil(MemorySegment.ofBuffer(buffer), buffer.position(), buffer.limit());
+            long position = buffer.position();
+            buffer.position(0);
+            return new ArrayUtil(MemorySegment.ofBuffer(buffer), position, buffer.limit());
         }
         else {
             throw new IllegalArgumentException("Unsupported ByteBuffer implementation " + buffer.getClass().getName());
