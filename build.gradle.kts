@@ -4,7 +4,8 @@ plugins {
 }
 
 multiRelease {
-    targetVersions(8, 19)
+    // todo: include 14, 15, 16, 17, 18 + 20
+    targetVersions(8, 17, 19)
 }
 
 repositories {
@@ -49,6 +50,14 @@ tasks.withType<Test>().configureEach {
         threadCount = 4
     }
     maxHeapSize = "2G"
+}
+
+tasks.named<JavaCompile>("compileJava17Java") {
+    options.compilerArgs = listOf("--enable-preview", "--add-modules", "jdk.incubator.foreign")
+}
+
+tasks.named<Test>("java17Test") {
+    jvmArgs("--enable-preview", "--add-modules", "jdk.incubator.foreign")
 }
 
 tasks.named<JavaCompile>("compileJava19Java") {
