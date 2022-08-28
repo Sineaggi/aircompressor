@@ -67,7 +67,7 @@ public class ArrayUtil {
     public int get24BitLittleEndian(long offset)
     {
         return memorySegment.get(JAVA_SHORT, offset) & 0xFFFF
-                | memorySegment.get(JAVA_BYTE, offset + SIZE_OF_SHORT) << 16;
+                | (memorySegment.get(JAVA_BYTE, offset + SIZE_OF_SHORT) & 0xFF) << 16;
     }
 
     public void put24BitLittleEndian(long offset, int value)

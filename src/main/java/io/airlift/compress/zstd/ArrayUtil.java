@@ -67,7 +67,7 @@ public class ArrayUtil {
     public int get24BitLittleEndian(long offset)
     {
         return UNSAFE.getShort(base, baseAddress + offset) & 0xFFFF
-            | UNSAFE.getByte(base, baseAddress + offset + SIZE_OF_SHORT) << 16;
+            | (UNSAFE.getByte(base, baseAddress + offset + SIZE_OF_SHORT) & 0xFF) << 16;
     }
 
     public void put24BitLittleEndian(long offset, int value)
