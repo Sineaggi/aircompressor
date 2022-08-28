@@ -43,9 +43,6 @@ public class LzoCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        //long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
-        //long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
-
         return LzoRawCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputLength, ArrayUtil.ofArray(output), outputOffset, maxOutputLength, table);
     }
 

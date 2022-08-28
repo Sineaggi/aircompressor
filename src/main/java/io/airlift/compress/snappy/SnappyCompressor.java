@@ -39,9 +39,7 @@ public class SnappyCompressor
         verifyRange(input, inputOffset, inputLength);
         verifyRange(output, outputOffset, maxOutputLength);
 
-        //long inputOffset = ARRAY_BYTE_BASE_OFFSET + inputOffset;
         long inputLimit = inputOffset + inputLength;
-        //long outputOffset = ARRAY_BYTE_BASE_OFFSET + outputOffset;
         long outputLimit = outputOffset + maxOutputLength;
 
         return SnappyRawCompressor.compress(ArrayUtil.ofArray(input), inputOffset, inputLimit, ArrayUtil.ofArray(output), outputOffset, outputLimit, table);
