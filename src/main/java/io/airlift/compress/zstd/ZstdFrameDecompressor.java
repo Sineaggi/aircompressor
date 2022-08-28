@@ -156,7 +156,7 @@ class ZstdFrameDecompressor
                 verify(input + SIZE_OF_BLOCK_HEADER <= inputLimit, input, "Not enough input bytes");
 
                 // read block header
-                int header = inputBase.getInt(input) & 0xFF_FFFF;
+                int header = inputBase.get24BitLittleEndian(input);
                 input += SIZE_OF_BLOCK_HEADER;
 
                 lastBlock = (header & 1) != 0;

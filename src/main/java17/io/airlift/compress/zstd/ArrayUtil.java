@@ -61,6 +61,12 @@ public class ArrayUtil {
         MemoryAccess.setShortAtOffset(memorySegment, offset, value);
     }
 
+    public int get24BitLittleEndian(long offset)
+    {
+        return MemoryAccess.getShortAtOffset(memorySegment, offset) & 0xFFFF
+                | MemoryAccess.getByteAtOffset(memorySegment, offset + SIZE_OF_SHORT) << 16;
+    }
+
     public void put24BitLittleEndian(long offset, int value)
     {
         MemoryAccess.setShortAtOffset(memorySegment, offset, (short) value);
