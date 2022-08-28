@@ -34,6 +34,7 @@ dependencies {
     testCompileOnly("io.trino.hadoop:hadoop-apache:3.2.0-17") // provided
     testImplementation("org.iq80.snappy:snappy:0.4")
     testImplementation("org.assertj:assertj-core")
+    testImplementation("org.opentest4j:opentest4j:1.2.0") // optional dep for assertj
 }
 
 tasks.test {

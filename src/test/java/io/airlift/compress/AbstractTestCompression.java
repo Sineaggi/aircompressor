@@ -15,6 +15,7 @@ package io.airlift.compress;
 
 import com.google.common.primitives.Bytes;
 import io.airlift.compress.benchmark.DataSet;
+import org.opentest4j.AssertionFailedError;
 import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
@@ -33,6 +34,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static com.google.common.base.Preconditions.checkPositionIndexes;
+import static io.airlift.compress.Util.arrayWithOffsetAndLengthToString;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -574,7 +576,8 @@ public abstract class AbstractTestCompression
 
         for (int i = 0; i < Math.min(leftLength, rightLength); i++) {
             if (left[leftOffset + i] != right[rightOffset + i]) {
-                fail(String.format("Byte arrays differ at position %s: 0x%02X vs 0x%02X", i, left[leftOffset + i], right[rightOffset + i]));
+                String message = String.format("expected: <%s> but was: <%s>", arrayWithOffsetAndLengthToString(left, leftOffset, leftLength), arrayWithOffsetAndLengthToString(right, rightOffset, rightLength));
+                throw new AssertionFailedError(message, left, right);
             }
         }
 

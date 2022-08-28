@@ -38,4 +38,21 @@ public final class Util
         }
         return humanReadableSpeed;
     }
+
+    public static String arrayWithOffsetAndLengthToString(byte[] a, int offset, int length) {
+        if (a == null)
+            return "null";
+        int iMax = length - 1;
+        if (iMax == -1)
+            return "[]";
+
+        StringBuilder b = new StringBuilder();
+        b.append('[');
+        for (int i = offset; ; i++) {
+            b.append(a[i]);
+            if (i == iMax)
+                return b.append(']').toString();
+            b.append(", ");
+        }
+    }
 }
