@@ -2,6 +2,7 @@ package io.airlift.compress.zstd;
 
 import java.nio.Buffer;
 
+import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
 import static io.airlift.compress.zstd.UnsafeUtil.UNSAFE;
 import static io.airlift.compress.zstd.UnsafeUtil.getAddress;
 import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
@@ -61,6 +62,12 @@ public class ArrayUtil {
 
     public void putShort(long offset, short value) {
         UNSAFE.putShort(base, baseAddress + offset, value);
+    }
+
+    public void put24BitLittleEndian(long offset, int value)
+    {
+        UNSAFE.putShort(base, baseAddress + offset, (short) value);
+        UNSAFE.putByte(base, baseAddress + offset + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
     }
 
     public int getInt(long offset) {

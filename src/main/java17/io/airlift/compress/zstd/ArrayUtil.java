@@ -6,6 +6,8 @@ import jdk.incubator.foreign.MemorySegment;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
+import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
+
 public class ArrayUtil {
     private final MemorySegment memorySegment;
     private ArrayUtil(MemorySegment memorySegment) {
@@ -57,6 +59,12 @@ public class ArrayUtil {
 
     public void putShort(long offset, short value) {
         MemoryAccess.setShortAtOffset(memorySegment, offset, value);
+    }
+
+    public void put24BitLittleEndian(long offset, int value)
+    {
+        MemoryAccess.setShortAtOffset(memorySegment, offset, (short) value);
+        MemoryAccess.setByteAtOffset(memorySegment, offset + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
     }
 
     public int getInt(long offset) {

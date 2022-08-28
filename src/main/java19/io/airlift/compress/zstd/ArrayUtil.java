@@ -4,6 +4,8 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.Buffer;
 
+import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
+
 public class ArrayUtil {
     // see https://stackoverflow.com/questions/73430301/java-foreign-memory-varhandlesegmentviewbase-error-misaligned-access-at-addr
     private static final ValueLayout.OfByte JAVA_BYTE = ValueLayout.JAVA_BYTE.withBitAlignment(8);
@@ -60,6 +62,12 @@ public class ArrayUtil {
 
     public void putShort(long offset, short value) {
         memorySegment.set(JAVA_SHORT, offset, value);
+    }
+
+    public void put24BitLittleEndian(long offset, int value)
+    {
+        memorySegment.set(JAVA_SHORT, offset, (short) value);
+        memorySegment.set(JAVA_BYTE, offset + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
     }
 
     public int getInt(long offset) {

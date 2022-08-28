@@ -29,7 +29,6 @@ import static io.airlift.compress.zstd.Constants.TREELESS_LITERALS_BLOCK;
 import static io.airlift.compress.zstd.Huffman.MAX_SYMBOL;
 import static io.airlift.compress.zstd.Huffman.MAX_SYMBOL_COUNT;
 import static io.airlift.compress.zstd.Util.checkArgument;
-import static io.airlift.compress.zstd.Util.put24BitLittleEndian;
 
 class ZstdFrameCompressor
 {
@@ -174,13 +173,13 @@ class ZstdFrameCompressor
                 checkArgument(blockSize + SIZE_OF_BLOCK_HEADER <= outputSize, "Output size too small");
 
                 int blockHeader = lastBlockFlag | (RAW_BLOCK << 1) | (blockSize << 3);
-                put24BitLittleEndian(outputBase, output, blockHeader);
+                outputBase.put24BitLittleEndian(output, blockHeader);
                 inputBase.copyMemory(input, outputBase, output + SIZE_OF_BLOCK_HEADER, blockSize);
                 compressedSize = SIZE_OF_BLOCK_HEADER + blockSize;
             }
             else {
                 int blockHeader = lastBlockFlag | (COMPRESSED_BLOCK << 1) | (compressedSize << 3);
-                put24BitLittleEndian(outputBase, output, blockHeader);
+                outputBase.put24BitLittleEndian(output, blockHeader);
                 compressedSize += SIZE_OF_BLOCK_HEADER;
             }
 
@@ -349,7 +348,7 @@ class ZstdFrameCompressor
         switch (headerSize) {
             case 3: { // 2 - 2 - 10 - 10
                 int header = encodingType | ((singleStream ? 0 : 1) << 2) | (literalsSize << 4) | (totalSize << 14);
-                put24BitLittleEndian(outputBase, outputOffset, header);
+                outputBase.put24BitLittleEndian(outputOffset, header);
                 break;
             }
             case 4: { // 2 - 2 - 14 - 14
@@ -420,7 +419,7 @@ class ZstdFrameCompressor
                 outputBase.putShort(outputOffset, (short) (RAW_LITERALS_BLOCK | (1 << 2) | (inputSize << 4)));
                 break;
             case 3:
-                put24BitLittleEndian(outputBase, outputOffset, RAW_LITERALS_BLOCK | (3 << 2) | (inputSize << 4));
+                outputBase.put24BitLittleEndian(outputOffset, RAW_LITERALS_BLOCK | (3 << 2) | (inputSize << 4));
                 break;
             default:
                 throw new AssertionError();

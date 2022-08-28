@@ -15,8 +15,6 @@ package io.airlift.compress.zstd;
 
 import io.airlift.compress.MalformedInputException;
 
-import static io.airlift.compress.zstd.Constants.SIZE_OF_SHORT;
-
 final class Util
 {
     private Util()
@@ -71,12 +69,6 @@ final class Util
             cycleLog = hashLog - 1;
         }
         return cycleLog;
-    }
-
-    public static void put24BitLittleEndian(ArrayUtil outputBase, long outputOffset, int value)
-    {
-        outputBase.putShort(outputOffset, (short) value);
-        outputBase.putByte(outputOffset + SIZE_OF_SHORT, (byte) (value >>> Short.SIZE));
     }
 
     // provides the minimum logSize to safely represent a distribution
